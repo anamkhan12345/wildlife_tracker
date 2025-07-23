@@ -22,9 +22,11 @@ import cv2
 import utils
 import ncnn
 import numpy as np
+from datetime import datetime
+import sqlite3
+import requests
 
-
-def basic_model(model_path):
+def ncnn_model(model_path):
     # Load the YOLO11 model
     model = YOLO(model_path)
 
@@ -38,6 +40,31 @@ def basic_model(model_path):
     ncnn_model = YOLO(expected_file_path)
 
     return ncnn_model
+
+def pre_process(img):
+    img = cv2.flip(img, 1) # Because we are using a webcam
+    image_resized = cv2.resize(img, (640,640))
+
+    # TODO: Apply sunlight reduction based on time of day
+    blur = cv2.GaussianBlur(image_resized, (5,5), cv2.BORDER_DEFAULT)
+    rgb_image = cv2.cvtColor(blur, cv2.COLOR_BGR2RGB)
+
+    return rgb_image
+
+
+def import_db(metadata, filename):
+
+    # Save metadata to SQLite database locally
+    url = "http://192.168.0.159:8000/upload"
+
+    with open(filename, "rb") as img_file:
+        response = requests.post(
+            url,
+            files={"image": img_file},
+            data=metadata
+            )
+
+    print(response.json())
 
 def run(model='models/best.pt', camera_id=0, width=640, height=640) -> None:
     """Continuously run inference on images acquired from the camera.
@@ -58,16 +85,8 @@ def run(model='models/best.pt', camera_id=0, width=640, height=640) -> None:
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
-    # Visualization parameters
-    row_size = 20  # pixels
-    left_margin = 24  # pixels
-    text_color = (0, 0, 255)  # red
-    font_size = 1
-    font_thickness = 1
-    fps_avg_frame_count = 10
-
     # Initialize the object detection model
-    detector = basic_model(model)
+    detector = ncnn_model(model)
 
     # Continuously capture images from the camera and run inference
     while cap.isOpened():
@@ -78,22 +97,41 @@ def run(model='models/best.pt', camera_id=0, width=640, height=640) -> None:
             )
 
         counter += 1
-        image = cv2.flip(image, 1)
 
-        # Convert the image from BGR to RGB as required by the TFLite model.
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # Preprocess image
+        rgb_image = pre_process(image)
 
 	# Get Detection
         detection_result = detector(rgb_image)
+        #breakpoint()
+        # Parse each detection
+        for detection in detection_result:
+            conf = detection.boxes.conf
+            aId = detection.boxes.id
+            cls = detection.boxes.cls
 
+            if cls.numel() > 0:
+                breakpoint()
+                print("detection")
+                cls_idx = int(cls.item())
+                label = detection.names[cls_idx]
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") 
+                metadata = {
+			"label": label,
+			"confidence": conf.item(),
+                        "timestamp": timestamp
+			}
+                file_name = label + "_" + timestamp + ".jpg"
+                cv2.imwrite(file_name, image)
+                import_db(metadata, file_name) 
 
         # Display frame
         annotated_frame = detection_result[0].plot()
- 
+         
         # Stop the program if the ESC key is pressed.
         if cv2.waitKey(1) == 27:
             break
-        cv2.imshow('object_detector', annotated_frame)
+        #cv2.imshow('object_detector', annotated_frame)
 
     cap.release()
     cv2.destroyAllWindows()
