@@ -1,17 +1,3 @@
-# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""Main script to run the object detection routine."""
 import argparse
 import sys
 import time
@@ -66,6 +52,31 @@ def import_db(metadata, filename):
 
     print(response.json())
 
+
+def parse_detection(detection_result):
+
+    breakpoint()
+    conf = detection.boxes.conf
+    aId = detection.boxes.id
+    cls = detection.boxes.cls
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") 
+    totalDetections = cls.numel()
+
+    if totalDetections > 0:
+        print("detection")
+        label = detection.names[cls_idx]
+        # TODO: How to store multiple confidence intervals?
+        metadata = {
+		"label": label,
+		"detections": totalDetections,
+                "timestamp": timestamp
+		}
+
+        file_name = label + "_" + timestamp + ".jpg"
+        cv2.imwrite(file_name, annotated_frame)
+        import_db(metadata, file_name) 
+
+
 def run(model='models/best.pt', camera_id=0, width=640, height=640) -> None:
     """Continuously run inference on images acquired from the camera.
 
@@ -103,30 +114,10 @@ def run(model='models/best.pt', camera_id=0, width=640, height=640) -> None:
 
 	# Get Detection
         detection_result = detector(rgb_image)
-        #breakpoint()
-        # Parse each detection
-        for detection in detection_result:
-            conf = detection.boxes.conf
-            aId = detection.boxes.id
-            cls = detection.boxes.cls
-
-            if cls.numel() > 0:
-                breakpoint()
-                print("detection")
-                cls_idx = int(cls.item())
-                label = detection.names[cls_idx]
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") 
-                metadata = {
-			"label": label,
-			"confidence": conf.item(),
-                        "timestamp": timestamp
-			}
-                file_name = label + "_" + timestamp + ".jpg"
-                cv2.imwrite(file_name, image)
-                import_db(metadata, file_name) 
-
-        # Display frame
         annotated_frame = detection_result[0].plot()
+
+        # Parse each detection and import to sqlite db
+        parse_detection(detection_result)
          
         # Stop the program if the ESC key is pressed.
         if cv2.waitKey(1) == 27:

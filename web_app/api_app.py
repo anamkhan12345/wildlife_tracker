@@ -44,7 +44,6 @@ async def upload_detection(
 
     # Step 2: Upload image to GCS
     gcs_url = upload_to_gcs(gcs_bucket, local_path, f"detections/{safe_filename}")
-    breakpoint()
     # Step 3: Write metadata to SQLite
     conn = sqlite3.connect("detections.db")
     cursor = conn.cursor()
