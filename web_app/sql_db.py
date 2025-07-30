@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS detections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     filename TEXT,
     label TEXT,
-    confidence REAL,
+    totalDetections TEXT,
     timestamp TEXT,
     gcs_url TEXT
 )

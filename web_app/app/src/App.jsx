@@ -20,7 +20,7 @@ function App() {
           <div key={idx} className="border p-2 shadow rounded">
             <img src={d.gcs_url} alt={d.label} className="w-full h-60 object-cover" />
             <div>
-              <strong>{d.label}</strong> ({(d.confidence * 100).toFixed(1)}%)
+              <strong>{d.label}</strong> ({d.totalDetections})
             </div>
             <small>{new Date(d.timestamp).toLocaleString()}</small>
           </div>

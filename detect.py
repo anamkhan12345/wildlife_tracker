@@ -53,26 +53,30 @@ def import_db(metadata, filename):
     print(response.json())
 
 
-def parse_detection(detection_result):
+def parse_detection(detection):
 
-    breakpoint()
+    detection = detection[0] 
     conf = detection.boxes.conf
     aId = detection.boxes.id
     cls = detection.boxes.cls
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") 
     totalDetections = cls.numel()
+    clsList = cls.tolist()
 
     if totalDetections > 0:
+        breakpoint()
         print("detection")
-        label = detection.names[cls_idx]
+        labels = [detection.names[x] for x in cls.tolist()]
+        label = ", ".join(labels) 
         # TODO: How to store multiple confidence intervals?
         metadata = {
 		"label": label,
-		"detections": totalDetections,
+		"totalDetections": totalDetections,
                 "timestamp": timestamp
 		}
 
         file_name = label + "_" + timestamp + ".jpg"
+        annotated_frame = detection.plot()
         cv2.imwrite(file_name, annotated_frame)
         import_db(metadata, file_name) 
 
@@ -114,8 +118,7 @@ def run(model='models/best.pt', camera_id=0, width=640, height=640) -> None:
 
 	# Get Detection
         detection_result = detector(rgb_image)
-        annotated_frame = detection_result[0].plot()
-
+        
         # Parse each detection and import to sqlite db
         parse_detection(detection_result)
          
