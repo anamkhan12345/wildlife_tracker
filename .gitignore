@@ -2,3 +2,4 @@ yolo*
 images*
 __pycache__*
 *.jpg
+web_app/detections.db
