@@ -33,7 +33,7 @@ def pre_process(img):
 
     # TODO: Apply sunlight reduction based on time of day
     blur = cv2.GaussianBlur(image_resized, (5,5), cv2.BORDER_DEFAULT)
-    rgb_image = cv2.cvtColor(blur, cv2.COLOR_BGR2RGB)
+    rgb_image = cv2.cvtColor(image_resized, cv2.COLOR_BGR2RGB)
 
     return rgb_image
 
@@ -62,23 +62,25 @@ def parse_detection(detection):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") 
     totalDetections = cls.numel()
     clsList = cls.tolist()
+    annotated_frame = detection.plot()
 
     if totalDetections > 0:
-        breakpoint()
         print("detection")
         labels = [detection.names[x] for x in cls.tolist()]
         label = ", ".join(labels) 
         # TODO: How to store multiple confidence intervals?
         metadata = {
-		"label": label,
-		"totalDetections": totalDetections,
+		"label": labels,
+		"confidence": totalDetections,
                 "timestamp": timestamp
 		}
 
         file_name = label + "_" + timestamp + ".jpg"
-        annotated_frame = detection.plot()
         cv2.imwrite(file_name, annotated_frame)
         import_db(metadata, file_name) 
+
+    return annotated_frame
+
 
 
 def run(model='models/best.pt', camera_id=0, width=640, height=640) -> None:
@@ -119,8 +121,8 @@ def run(model='models/best.pt', camera_id=0, width=640, height=640) -> None:
 	# Get Detection
         detection_result = detector(rgb_image)
         
-        # Parse each detection and import to sqlite db
-        parse_detection(detection_result)
+        # Parse detection results
+        annotated_frame = parse_detection(detection_result)
          
         # Stop the program if the ESC key is pressed.
         if cv2.waitKey(1) == 27:
