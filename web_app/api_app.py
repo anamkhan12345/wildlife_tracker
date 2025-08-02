@@ -31,7 +31,7 @@ gcs_bucket = "home_wildlife_tracker"
 async def upload_detection(
     image: UploadFile = File(...),
     label: str = Form(...),
-    totalDetections: float = Form(...),
+    confidence: float = Form(...),
     timestamp: str = Form(...)
 ):
     # Step 1: Save image locally
@@ -48,9 +48,9 @@ async def upload_detection(
     conn = sqlite3.connect("detections.db")
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO detections (filename, label, totalDetections, timestamp, gcs_url)
+        INSERT INTO detections (filename, label, confidence, timestamp, gcs_url)
         VALUES (?, ?, ?, ?, ?)
-    """, (image.filename, label, totalDetections, timestamp, gcs_url) )
+    """, (image.filename, label, confidence, timestamp, gcs_url) )
     conn.commit()
     conn.close()
 
@@ -58,7 +58,7 @@ async def upload_detection(
     metadata = {
         "filename": image.filename,
         "label": label,
-        "totalDetections": totalDetections,
+        "confidence": confidence,
         "timestamp": timestamp,
         "gcs_url": gcs_url
     }
@@ -70,14 +70,14 @@ async def upload_detection(
 def get_detections():
     conn = sqlite3.connect("detections.db")
     cursor = conn.cursor()
-    cursor.execute("SELECT label, totalDetections, timestamp, gcs_url FROM detections ORDER BY timestamp DESC")
+    cursor.execute("SELECT label, confidence, timestamp, gcs_url FROM detections ORDER BY timestamp DESC")
     rows = cursor.fetchall()
     conn.close()
 
     return [
         {
             "label": row[0],
-            "totalDetections": row[1],
+            "confidence": row[1],
             "timestamp": row[2],
             "gcs_url": row[3]
         }
