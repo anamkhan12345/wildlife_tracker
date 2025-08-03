@@ -3,3 +3,4 @@ images*
 __pycache__*
 *.jpg
 web_app/detections.db
+*.mp4
