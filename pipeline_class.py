@@ -48,6 +48,7 @@ class MultipleFrameFilter:
         self.buffer_size = buffer_size
         self.threshold = threshold  # Fraction of frames that must show motion
         self.frame_buffer = deque(maxlen=buffer_size)
+        self.downloads = 0
         
     def filter_motion(self, motion_mask):
         # Add current frame to buffer
@@ -64,7 +65,7 @@ class MultipleFrameFilter:
         
         return (persistent_motion * 255).astype(np.uint8)
 
-    def analyze_motion(self, persistent_motion, original_frame, min_area=50):
+    def analyze_motion(self, persistent_motion, original_frame, min_area):
 
         # Find connected components
         num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(
@@ -80,16 +81,17 @@ class MultipleFrameFilter:
                 motion_found = True
                 # Draw bounding box
                 x, y, w, h = stats[i, cv.CC_STAT_LEFT:cv.CC_STAT_LEFT+4]
-                cv.rectangle(original_frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
+                cv.rectangle(original_frame, (x+1, y+1), (x+w+1, y+h+1), (0, 255, 0), 1)
         
-        if motion_found:
+        if motion_found and self.downloads < 200:
             # Motion group is large enough - save original frame
             timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
             filename = f'motion_detected_{timestamp}_area_{area}.jpg'
-            text = f"Area: {area}"
+            text = f"Bird"
             cv.putText(original_frame, text, (x, y-10), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-            print(f"Motion detected: Area={area}, Position=({x},{y})")
+            print(f"Motion detected: Area={area}, Position=({x},{y}), Detection Count: {self.downloads}")
             cv.imwrite(filename, original_frame)
+            self.downloads = self.downloads + 1
 
         return num_labels - 1  # Return number of motion groups found
 

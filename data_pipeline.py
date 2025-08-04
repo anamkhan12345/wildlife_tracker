@@ -2,9 +2,9 @@ import cv2 as cv
 import pipeline_class
 
 
-run_type = 'test'
+run_type = 1
 
-if run_type is 'test':
+if run_type == 'test':
     video_file = 'bird_am_vid.mp4'
     cap = cv.VideoCapture(video_file)
     total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
@@ -17,9 +17,7 @@ counter = 0
 # Define vegetation areas as rectangles (x1, y1, x2, y2)
 detector = pipeline_class.VegetationFilter()
 veg_zone = [
-    (448, 192, 639, 639),
-    (512, 0, 639, 192)
-
+    (520, 0, 639, 639),
 ]
 
 # Motion filter over frames
@@ -55,13 +53,13 @@ while True:
         filtered_frame = motion_filter.filter_motion(motion)
 
         # Save any groups found
-        detection = motion_filter.analyze_motion(filtered_frame, orig_frame, 100)
+        detection = motion_filter.analyze_motion(motion, orig_frame, 20)
 
         # Display diffs
         cv.imshow('Video', veg_plot_org)
-        #cv.imshow('Grid Overlay', grid_frame)
+        # cv.imshow('Grid Overlay', grid_frame)
         cv.imshow('Vegetation Filter', motion)
-        cv.imshow('Motion Filter', filtered_frame)
+        #cv.imshow('Motion Filter', filtered_frame)
 
     if cv.waitKey(20) & 0xFF == ord('d'): # stop looping on videos after 20 miliseconds or when "d" is pressed
         break
