@@ -46,8 +46,6 @@ while True:
                    cv.FONT_HERSHEY_TRIPLEX, 0.5,
                    (0,255,0), 1, lineType=cv.LINE_AA)
 
-
-
         # Set Vegetation areas
         detector.set_vegetation_zones(orig_frame.shape, veg_zone)
 
@@ -57,11 +55,15 @@ while True:
         # Filter for motion across multiple frames
         filtered_frame = motion_filter.filter_motion(motion)
 
+        # Save any groups found
+        detection = motion_filter.analyze_motion(filtered_frame, orig_frame, 50)
+
         # Display diffs
         cv.imshow('Video', veg_plot_org)
         #cv.imshow('Grid Overlay', grid_frame)
         #cv.imshow('Vegetation Filter', motion)
         cv.imshow('Motion Filter', filtered_frame)
+        
 
 
 
