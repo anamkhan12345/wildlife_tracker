@@ -37,8 +37,10 @@ class VegetationFilter:
             
             # Combine: use vegetation_motion in vegetation areas, regular motion elsewhere
             motion_mask = np.where(self.vegetation_mask > 0, vegetation_motion, motion_mask)
-        
+
         return motion_mask
+    
+    
 
 class MultipleFrameFilter:
     def __init__(self, buffer_size=5, threshold=0.6):
@@ -83,3 +85,14 @@ def add_grid(image, rows=3, cols=3, color=(255, 255, 255), thickness=2, alpha=0.
     result = cv.addWeighted(result, 1-alpha, overlay, alpha, 0)
     
     return result
+
+def plot_zone(frame, veg_zone):
+        img = frame.copy()
+        for area in veg_zone:
+            if len(area) == 4:  # Rectangle (x1, y1, x2, y2)
+                x1, y1, x2, y2 = area
+                zone_plot = cv.rectangle(img, (x1,y1), (x2,y2), (0,255,0), thickness=2)
+            else:  # Polygon
+                zone_plot = cv.polylines(img, [np.array(area)], isClosed=True, color=(0, 255, 0), thickness=3)
+
+        return zone_plot
