@@ -28,9 +28,8 @@ motion_filter = pipeline_class.MultipleFrameFilter(buffer_size=5, threshold=0.6)
 while True:
     flag, frame = cap.read()
 
-    if frame is None or frame.size == 0:
+    if not flag or frame is None or frame.size == 0:
         print("Empty or invalid frame, skipping color conversion")
-    elif not flag:
         break
     else:
         # Show the re-sized webcam images
@@ -56,16 +55,13 @@ while True:
         filtered_frame = motion_filter.filter_motion(motion)
 
         # Save any groups found
-        detection = motion_filter.analyze_motion(filtered_frame, orig_frame, 50)
+        detection = motion_filter.analyze_motion(filtered_frame, orig_frame, 100)
 
         # Display diffs
         cv.imshow('Video', veg_plot_org)
         #cv.imshow('Grid Overlay', grid_frame)
-        #cv.imshow('Vegetation Filter', motion)
+        cv.imshow('Vegetation Filter', motion)
         cv.imshow('Motion Filter', filtered_frame)
-        
-
-
 
     if cv.waitKey(20) & 0xFF == ord('d'): # stop looping on videos after 20 miliseconds or when "d" is pressed
         break

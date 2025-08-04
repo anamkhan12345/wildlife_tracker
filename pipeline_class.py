@@ -32,12 +32,13 @@ class VegetationFilter:
         
         if self.vegetation_mask is not None:
             # Get vegetation-specific motion with slower learning
-            vegetation_frame = cv.bitwise_and(frame, frame, mask=self.vegetation_mask)
-            vegetation_motion = self.backSub.apply(vegetation_frame, 
-                                                learningRate=self.vegetation_learning_rate)
-            
+            motion_mask = cv.bitwise_and(motion_mask, cv.bitwise_not(self.vegetation_mask))
             # Combine: use vegetation_motion in vegetation areas, regular motion elsewhere
-            motion_mask = np.where(self.vegetation_mask > 0, vegetation_motion, motion_mask)
+            # motion_mask = np.where(self.vegetation_mask > 0, vegetation_motion, motion_mask)
+
+        # Basic cleanup
+        kernel = cv.getStructuringElement(cv.MORPH_ELLIPSE, (3, 3))
+        motion_mask = cv.morphologyEx(motion_mask, cv.MORPH_OPEN, kernel)
 
         return motion_mask
 
@@ -69,21 +70,26 @@ class MultipleFrameFilter:
         num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(
             persistent_motion, connectivity=8
         )
-        
+        motion_found = False
+
         # Skip background label (0)
         for i in range(1, num_labels):
             area = stats[i, cv.CC_STAT_AREA]
             
             if area >= min_area:
-                # Motion group is large enough - save original frame
-                timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
-                filename = f'motion_detected_{timestamp}_area_{area}.jpg'
-                
+                motion_found = True
                 # Draw bounding box
                 x, y, w, h = stats[i, cv.CC_STAT_LEFT:cv.CC_STAT_LEFT+4]
                 cv.rectangle(original_frame, (x, y), (x+w, y+h), (0, 255, 0), 2)
-                cv.imwrite(filename, original_frame)
-                print(f"Motion detected: Area={area}, Position=({x},{y})")
+        
+        if motion_found:
+            # Motion group is large enough - save original frame
+            timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
+            filename = f'motion_detected_{timestamp}_area_{area}.jpg'
+            text = f"Area: {area}"
+            cv.putText(original_frame, text, (x, y-10), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+            print(f"Motion detected: Area={area}, Position=({x},{y})")
+            cv.imwrite(filename, original_frame)
 
         return num_labels - 1  # Return number of motion groups found
 
