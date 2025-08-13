@@ -65,33 +65,51 @@ class MultipleFrameFilter:
         
         return (persistent_motion * 255).astype(np.uint8)
 
-    def analyze_motion(self, persistent_motion, original_frame, min_area):
+
+    def annotate_data(self, persistent_motion, original_frame, min_area):
 
         # Find connected components
         num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(
             persistent_motion, connectivity=8
         )
         motion_found = False
-
+        all_box_widths = []
+        all_box_heights = []
+        all_box_centroids = []
         # Skip background label (0)
         for i in range(1, num_labels):
             area = stats[i, cv.CC_STAT_AREA]
+            cent = centroids[i]
             
             if area >= min_area:
                 motion_found = True
                 # Draw bounding box
                 x, y, w, h = stats[i, cv.CC_STAT_LEFT:cv.CC_STAT_LEFT+4]
-                cv.rectangle(original_frame, (x+1, y+1), (x+w+1, y+h+1), (0, 255, 0), 1)
-        
+                box_width = x + w
+                box_height = y + h
+                cv.rectangle(original_frame, (x, y), (box_width, box_height), (0, 255, 0), 1)
+
+                # Save vars to later write to txt file
+                all_box_centroids.append(cent)
+                all_box_widths.append(box_width)
+                all_box_heights.append(box_height)
+
         if motion_found and self.downloads < 200:
-            # Motion group is large enough - save original frame
+            # Save frame image
             timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
             filename = f'motion_detected_{timestamp}_area_{area}.jpg'
-            text = f"Bird"
-            cv.putText(original_frame, text, (x, y-10), cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
             print(f"Motion detected: Area={area}, Position=({x},{y}), Detection Count: {self.downloads}")
-            cv.imwrite(filename, original_frame)
+            #cv.imwrite(filename, original_frame)
             self.downloads = self.downloads + 1
+            breakpoint()
+            img_height = original_frame.shape[0]
+            img_width = original_frame.shape[1]
+            yolo_width = [w / img_width for w in all_box_widths]
+            yolo_height = [h / img_height for h in all_box_heights]
+            yolo_cent_x = [ c[0] / img_width for c in all_box_centroids]
+            yolo_cent_y = [ c[1] / img_height for c in all_box_centroids]
+
+
 
         return num_labels - 1  # Return number of motion groups found
 

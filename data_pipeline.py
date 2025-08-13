@@ -9,7 +9,7 @@ if run_type == 'test':
     cap = cv.VideoCapture(video_file)
     total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
 else:
-    cap = cv.VideoCapture(1)
+    cap = cv.VideoCapture(0)
     total_frames = 1
 
 counter = 0
@@ -53,7 +53,7 @@ while True:
         filtered_frame = motion_filter.filter_motion(motion)
 
         # Save any groups found
-        detection = motion_filter.analyze_motion(motion, orig_frame, 20)
+        detection = motion_filter.annotate_data(motion, orig_frame, 20)
 
         # Display diffs
         cv.imshow('Video', veg_plot_org)
@@ -68,6 +68,3 @@ while True:
 
 cap.release() # closes video file
 cv.destroyAllWindows() # closes all windows
-
-
-    
