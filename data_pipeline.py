@@ -9,7 +9,7 @@ if run_type == 'test':
     cap = cv.VideoCapture(video_file)
     total_frames = int(cap.get(cv.CAP_PROP_FRAME_COUNT))
 else:
-    cap = cv.VideoCapture(0)
+    cap = cv.VideoCapture(1)
     total_frames = 1
 
 counter = 0
@@ -25,46 +25,52 @@ motion_filter = pipeline_class.MultipleFrameFilter(buffer_size=5, threshold=0.6)
 
 while True:
     flag, frame = cap.read()
+    counter = counter + 1
 
     if not flag or frame is None or frame.size == 0:
         print("Empty or invalid frame, skipping color conversion")
         break
     else:
-        # Show the re-sized webcam images
-        orig_frame = cv.resize(frame, (640,640), interpolation=cv.INTER_AREA)
+        # Ignore first frames as camera turns on and background stabilizes
+        if counter > 60:
+            # Show the re-sized webcam images
+            orig_frame = cv.resize(frame, (640,640), interpolation=cv.INTER_AREA)
 
-        # Grid overlay
-        grid_frame = pipeline_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
+            # Grid overlay
+            grid_frame = pipeline_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
 
-        # Check veg zone
-        veg_plot_org = pipeline_class.plot_zone(orig_frame, veg_zone)
-        txt = str(counter) + "/" + str(total_frames)
-        cv.putText(veg_plot_org, txt, (0,639), 
-                   cv.FONT_HERSHEY_TRIPLEX, 0.5,
-                   (0,255,0), 1, lineType=cv.LINE_AA)
+            # Check veg zone
+            veg_plot_org = pipeline_class.plot_zone(orig_frame, veg_zone)
+            txt = str(counter) + "/" + str(total_frames)
+            cv.putText(veg_plot_org, txt, (0,639), 
+                    cv.FONT_HERSHEY_TRIPLEX, 0.5,
+                    (0,255,0), 1, lineType=cv.LINE_AA)
 
-        # Set Vegetation areas
-        detector.set_vegetation_zones(orig_frame.shape, veg_zone)
+            # Set Vegetation areas
+            detector.set_vegetation_zones(orig_frame.shape, veg_zone)
 
-        # Find motion mask - remove swaying vegetation
-        motion = detector.adaptive_learning(orig_frame)
+            # Find motion mask - remove swaying vegetation
+            motion = detector.adaptive_learning(orig_frame)
 
-        # Filter for motion across multiple frames
-        filtered_frame = motion_filter.filter_motion(motion)
+            # Filter for motion across multiple frames
+            filtered_frame = motion_filter.filter_motion(motion)
 
-        # Save any groups found
-        detection = motion_filter.annotate_data(motion, orig_frame, 20)
+            # Save any groups found
+            detection = motion_filter.annotate_data(motion, orig_frame, 20)
 
-        # Display diffs
-        cv.imshow('Video', veg_plot_org)
-        # cv.imshow('Grid Overlay', grid_frame)
-        cv.imshow('Vegetation Filter', motion)
-        #cv.imshow('Motion Filter', filtered_frame)
+            # Display diffs
+            cv.imshow('Video', veg_plot_org)
+            # cv.imshow('Grid Overlay', grid_frame)
+            cv.imshow('Vegetation Filter', motion)
+            #cv.imshow('Motion Filter', filtered_frame)
+        else:
+            print("Waiting for camera to turn on and stabilize")
 
     if cv.waitKey(20) & 0xFF == ord('d'): # stop looping on videos after 20 miliseconds or when "d" is pressed
         break
+    elif motion_filter.downloads > 200:
+        break
 
-    counter = counter + 1
 
 cap.release() # closes video file
 cv.destroyAllWindows() # closes all windows

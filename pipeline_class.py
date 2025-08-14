@@ -96,10 +96,11 @@ class MultipleFrameFilter:
                 all_box_widths.append(box_width)
                 all_box_heights.append(box_height)
 
-        if motion_found and self.downloads < 200:
-            breakpoint()
+        if motion_found:
             self.downloads = self.downloads + 1
             print(f"Motion detected: Area={area}, Position=({x},{y}), Detection Count: {self.downloads}")
+
+            # Calculate training params for yolo labels
             img_height = original_frame.shape[0]
             img_width = original_frame.shape[1]
             yolo_width = [w / img_width for w in all_box_widths]
@@ -117,23 +118,13 @@ class MultipleFrameFilter:
             label_dir.mkdir(parents=True, exist_ok=True)
             img_path = os.path.join(img_dir, img_file)
             label_path = os.path.join(label_dir, label_file)
+
+            # Save image w/bounding box and yolo label .txt file
             cv.imwrite(img_path, original_frame)
             with open(label_path, 'w') as file:
                 for i in range(len(yolo_width)):
                     # class x_center y_center width height
                     file.write(f'0 {yolo_cent_x[i]} {yolo_cent_y[i]} {yolo_width[i]} {yolo_height[i]}\n')
-              
-            
-            
-
-
-
-
-            
-
-
-
-
         return num_labels - 1  # Return number of motion groups found
 
 
