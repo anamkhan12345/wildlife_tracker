@@ -1,5 +1,7 @@
 import cv2 as cv
 import numpy as np
+import os
+from pathlib import Path
 import time
 from collections import deque
 
@@ -95,19 +97,40 @@ class MultipleFrameFilter:
                 all_box_heights.append(box_height)
 
         if motion_found and self.downloads < 200:
-            # Save frame image
-            timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
-            filename = f'motion_detected_{timestamp}_area_{area}.jpg'
-            print(f"Motion detected: Area={area}, Position=({x},{y}), Detection Count: {self.downloads}")
-            #cv.imwrite(filename, original_frame)
-            self.downloads = self.downloads + 1
             breakpoint()
+            self.downloads = self.downloads + 1
+            print(f"Motion detected: Area={area}, Position=({x},{y}), Detection Count: {self.downloads}")
             img_height = original_frame.shape[0]
             img_width = original_frame.shape[1]
             yolo_width = [w / img_width for w in all_box_widths]
             yolo_height = [h / img_height for h in all_box_heights]
             yolo_cent_x = [ c[0] / img_width for c in all_box_centroids]
             yolo_cent_y = [ c[1] / img_height for c in all_box_centroids]
+
+            # Save frame image
+            timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
+            img_file = f'{self.downloads}_{timestamp}_area_{area}.jpg'
+            label_file = f'{self.downloads}_{timestamp}_area_{area}.txt'
+            img_dir = Path('image/train')
+            label_dir = Path('label/train')
+            img_dir.mkdir(parents=True, exist_ok=True)
+            label_dir.mkdir(parents=True, exist_ok=True)
+            img_path = os.path.join(img_dir, img_file)
+            label_path = os.path.join(label_dir, label_file)
+            cv.imwrite(img_path, original_frame)
+            with open(label_path, 'w') as file:
+                for i in range(len(yolo_width)):
+                    # class x_center y_center width height
+                    file.write(f'0 {yolo_cent_x[i]} {yolo_cent_y[i]} {yolo_width[i]} {yolo_height[i]}\n')
+              
+            
+            
+
+
+
+
+            
+
 
 
 
