@@ -78,6 +78,7 @@ class MultipleFrameFilter:
         all_box_widths = []
         all_box_heights = []
         all_box_centroids = []
+        all_box_area = []
         # Skip background label (0)
         for i in range(1, num_labels):
             area = stats[i, cv.CC_STAT_AREA]
@@ -85,6 +86,7 @@ class MultipleFrameFilter:
             
             if area >= min_area:
                 motion_found = True
+                all_box_area.append(area)
                 # Draw bounding box
                 x, y, w, h = stats[i, cv.CC_STAT_LEFT:cv.CC_STAT_LEFT+4]
                 box_width = x + w
@@ -98,7 +100,7 @@ class MultipleFrameFilter:
 
         if motion_found:
             self.downloads = self.downloads + 1
-            print(f"Motion detected: Area={area}, Position=({x},{y}), Detection Count: {self.downloads}")
+            print(f"Motion detected: Area={max(all_box_area)}, Position=({x},{y}), Detection Count: {self.downloads}")
 
             # Calculate training params for yolo labels
             img_height = original_frame.shape[0]
@@ -110,10 +112,10 @@ class MultipleFrameFilter:
 
             # Save frame image
             timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
-            img_file = f'{self.downloads}_{timestamp}_area_{area}.jpg'
-            label_file = f'{self.downloads}_{timestamp}_area_{area}.txt'
-            img_dir = Path('image/train')
-            label_dir = Path('label/train')
+            img_file = f'{self.downloads}_{timestamp}_area_{max(all_box_area)}.jpg'
+            label_file = f'{self.downloads}_{timestamp}_area_{max(all_box_area)}.txt'
+            img_dir = Path('image/test')
+            label_dir = Path('image/test')
             img_dir.mkdir(parents=True, exist_ok=True)
             label_dir.mkdir(parents=True, exist_ok=True)
             img_path = os.path.join(img_dir, img_file)
