@@ -8,7 +8,9 @@ def pipeline(cam_id, detection_area, detection_limit):
     # Define vegetation areas as rectangles (x1, y1, x2, y2)
     detector = pipeline_class.VegetationFilter()
     veg_zone = [
-        (520, 0, 639, 639),
+        (470, 0, 639, 639),
+        (370, 440, 520, 639)
+        # (0,0,60,470)
     ]
 
     # Motion filter over frames

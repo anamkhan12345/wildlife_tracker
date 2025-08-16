@@ -114,8 +114,8 @@ class MultipleFrameFilter:
             timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
             img_file = f'{self.downloads}_{timestamp}_area_{max(all_box_area)}.jpg'
             label_file = f'{self.downloads}_{timestamp}_area_{max(all_box_area)}.txt'
-            img_dir = Path('image/test')
-            label_dir = Path('image/test')
+            img_dir = Path('image/test2')
+            label_dir = Path('image/test2')
             img_dir.mkdir(parents=True, exist_ok=True)
             label_dir.mkdir(parents=True, exist_ok=True)
             img_path = os.path.join(img_dir, img_file)
