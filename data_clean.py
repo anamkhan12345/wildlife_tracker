@@ -1,6 +1,11 @@
 import os
 import glob
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.units as munits
+
+#munits.registry.clear()
 
 def create_data_df(dir, ext, delim):
     dir_ext = dir + "\*" + ext
@@ -11,26 +16,42 @@ def create_data_df(dir, ext, delim):
     for f in files:
         name, _ = os.path.splitext(f)
         parts = name.split(delim)
-        areas.append(parts[-1])
-        times.append(parts[1])
-    
+        aArea = float(parts[-1])
+        areas.append(aArea)
+        aTime = float(parts[1])
+        times.append(aTime)
+
+    time_dt = pd.to_datetime(times, unit='ms', utc=True).tz_convert('US/Eastern')
+    hours_dt = [x.hour for x in time_dt]
+
     df = pd.DataFrame({
         "files": files,
-        "area": areas,
-        "time": times
+        "areas": areas,
+        "times": time_dt,
+        "hours": hours_dt
         })
+    
+    df = df.sort_values("times")
 
     return df
 
 
 # Read in all the .jpg files
 df_test = create_data_df('image\\test', '.jpg', '_')
+df_test2 = create_data_df('image\\test2', '.jpg', '_')
+df_train = create_data_df('image\\train', '.jpg', '_')
+df = pd.concat([df_test, df_test2, df_train], ignore_index=True)
+df = df.sort_values('times')
 breakpoint()
-# Parse out the timestamp from file name
 
-# Plot areas captured
+# Plot areas captured and detection times
+# TODO: This is only the MAX area detected in each frame, not all bounding boxes
+sns.scatterplot(df['areas'])
+plt.show()
+sns.scatterplot(data=df, x='hours', y='areas')
+plt.show()
 
-# Plot detection times
+# Explore data further
 
 # Remove irrelevant areas 
 
