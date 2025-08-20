@@ -51,6 +51,13 @@ class MultipleFrameFilter:
         self.threshold = threshold  # Fraction of frames that must show motion
         self.frame_buffer = deque(maxlen=buffer_size)
         self.downloads = 0
+
+        self.small_img_dir = Path('image/test/small')
+        self.med_img_dir = Path('image/test/medium')
+        self.big_img_dir = Path('image/test/big')
+        self.small_img_dir.mkdir(parents=True, exist_ok=True)
+        self.med_img_dir.mkdir(parents=True, exist_ok=True)
+        self.big_img_dir.mkdir(parents=True, exist_ok=True)
         
     def filter_motion(self, motion_mask):
         # Add current frame to buffer
@@ -66,6 +73,24 @@ class MultipleFrameFilter:
         persistent_motion = (temporal_sum >= (self.threshold * self.buffer_size))
         
         return (persistent_motion * 255).astype(np.uint8)
+    
+    def save_data(self, all_box_area, yolo_format, dir_path, original_frame):
+        # Save frame image
+        timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
+        img_file = f'{timestamp}_area_{all_box_area}_{self.downloads}.jpg'
+        label_file = f'{timestamp}_area_{all_box_area}_{self.downloads}.txt'
+
+        img_path = os.path.join(dir_path, img_file)
+        label_path = os.path.join(dir_path, label_file)
+
+        # Save image w/bounding box and yolo label .txt file
+        cv.imwrite(img_path, original_frame)
+        with open(label_path, 'w') as file:
+            print("writting")
+            breakpoint()
+            for i in range(len(yolo_format['width'])):
+                # class x_center y_center width height
+                file.write(f"0 {yolo_format['x_cent'][i]} {yolo_format['y_cent'][i]} {yolo_format['width'][i]} {yolo_format['height'][i]}\n")
 
 
     def annotate_data(self, persistent_motion, original_frame, min_area):
@@ -79,54 +104,54 @@ class MultipleFrameFilter:
         all_box_heights = []
         all_box_centroids = []
         all_box_area = []
+
         # Skip background label (0)
-        for i in range(1, num_labels):
-            area = stats[i, cv.CC_STAT_AREA]
-            cent = centroids[i]
-            
-            if area >= min_area:
-                motion_found = True
-                all_box_area.append(area)
-                # Draw bounding box
-                x, y, w, h = stats[i, cv.CC_STAT_LEFT:cv.CC_STAT_LEFT+4]
-                box_width = x + w
-                box_height = y + h
-                cv.rectangle(original_frame, (x, y), (box_width, box_height), (0, 255, 0), 1)
+        if num_labels < 6:
+            # Loop through all groups and draw bounding box
+            for i in range(1, num_labels):
+                area = stats[i, cv.CC_STAT_AREA]
+                cent = centroids[i]
+                if area >= min_area and area < 7500:
+                    motion_found = True
+                    all_box_area.append(area)
+                    # Draw bounding box
+                    x, y, w, h = stats[i, cv.CC_STAT_LEFT:cv.CC_STAT_LEFT+4]
+                    bttm_x = x + w
+                    bttm_y = y + h
+                    cv.rectangle(original_frame, (x, y), (bttm_x, bttm_y), (0, 255, 0), 1)
+                    # Save vars to later write to txt file
+                    all_box_centroids.append(cent)
+                    all_box_widths.append(w)
+                    all_box_heights.append(h)
 
-                # Save vars to later write to txt file
-                all_box_centroids.append(cent)
-                all_box_widths.append(box_width)
-                all_box_heights.append(box_height)
+            # After drawing all bounding boxes - save img with drawings and yolo formatted text file
+            if motion_found:
+                self.downloads = self.downloads + 1
+                max_area = max(all_box_area)
+                print(f"Motion detected: Area={max_area}, Position=({x},{y}), Detection Count: {self.downloads}")
 
-        if motion_found:
-            self.downloads = self.downloads + 1
-            print(f"Motion detected: Area={max(all_box_area)}, Position=({x},{y}), Detection Count: {self.downloads}")
+                # Calculate training params for yolo labels
+                img_height = original_frame.shape[0]
+                img_width = original_frame.shape[1]
+                yolo_width = [w / img_width for w in all_box_widths]
+                yolo_height = [h / img_height for h in all_box_heights]
+                yolo_cent_x = [ round(c[0] / img_width, 6) for c in all_box_centroids]
+                yolo_cent_y = [ round(c[1] / img_height, 6) for c in all_box_centroids]
+                yolo_format = {'x_cent': yolo_cent_x,
+                               'y_cent': yolo_cent_y,
+                               'width': yolo_width,
+                               'height': yolo_height}
+                breakpoint()
 
-            # Calculate training params for yolo labels
-            img_height = original_frame.shape[0]
-            img_width = original_frame.shape[1]
-            yolo_width = [w / img_width for w in all_box_widths]
-            yolo_height = [h / img_height for h in all_box_heights]
-            yolo_cent_x = [ c[0] / img_width for c in all_box_centroids]
-            yolo_cent_y = [ c[1] / img_height for c in all_box_centroids]
+                if max_area < 50:
+                    self.save_data(max_area, yolo_format, self.small_img_dir, original_frame)
+                elif max_area >= 50 and max_area < 500:
+                    self.save_data(max_area, yolo_format, self.med_img_dir, original_frame)
+                else:
+                    self.save_data(max_area, yolo_format, self.big_img_dir, original_frame)
+        else:
+            print("Too much motion detected, camera possibly moving")
 
-            # Save frame image
-            timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
-            img_file = f'{self.downloads}_{timestamp}_area_{max(all_box_area)}.jpg'
-            label_file = f'{self.downloads}_{timestamp}_area_{max(all_box_area)}.txt'
-            img_dir = Path('image/test2')
-            label_dir = Path('image/test2')
-            img_dir.mkdir(parents=True, exist_ok=True)
-            label_dir.mkdir(parents=True, exist_ok=True)
-            img_path = os.path.join(img_dir, img_file)
-            label_path = os.path.join(label_dir, label_file)
-
-            # Save image w/bounding box and yolo label .txt file
-            cv.imwrite(img_path, original_frame)
-            with open(label_path, 'w') as file:
-                for i in range(len(yolo_width)):
-                    # class x_center y_center width height
-                    file.write(f'0 {yolo_cent_x[i]} {yolo_cent_y[i]} {yolo_width[i]} {yolo_height[i]}\n')
         return num_labels - 1  # Return number of motion groups found
 
 

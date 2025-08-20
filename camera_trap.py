@@ -81,8 +81,8 @@ def main():
         description='Arg parse for two vars - camera id and detection area'
     )
     parser.add_argument('-c', '--cam', type=int, default=1)
-    parser.add_argument('-a', '--det_area', type=int, default=20)
-    parser.add_argument('-l', '--det_limit', type=int, default=200)
+    parser.add_argument('-a', '--det_area', type=int, default=30)
+    parser.add_argument('-l', '--det_limit', type=int, default=1000)
 
     # Parse arguments
     args = parser.parse_args()
