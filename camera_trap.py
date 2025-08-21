@@ -17,9 +17,22 @@ def pipeline(cam_id, detection_area, detection_limit):
     motion_filter = pipeline_class.MultipleFrameFilter(buffer_size=5, threshold=0.6)
     counter = 0
 
+    # Set up camera
     cap = cv.VideoCapture(cam_id)
-    print("Letting camera warm up...")
+    if not cap.isOpened():
+        print("Cannot open camera")
+        exit()
 
+    # Set to 1080x1920
+    cap.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
+    cap.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
+
+    # Verify settings
+    actual_w = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    actual_h = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+    print(f"Resolution set to: {actual_w}x{actual_h}")
+    print("Letting camera warm up...")
+    breakpoint()
     # Warm-up frames
     for _ in range(3):
         cap.read()
@@ -36,8 +49,7 @@ def pipeline(cam_id, detection_area, detection_limit):
             # Ignore first frames as camera turns on and background stabilizes
             if counter > 60:
                 # Show the re-sized webcam images
-                orig_frame = cv.resize(frame, (640,640), interpolation=cv.INTER_AREA)
-
+                orig_frame = frame
                 # Grid overlay
                 grid_frame = pipeline_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
 
@@ -55,7 +67,7 @@ def pipeline(cam_id, detection_area, detection_limit):
                 motion = detector.adaptive_learning(orig_frame)
 
                 # Filter for motion across multiple frames
-                filtered_frame = motion_filter.filter_motion(motion)
+                #filtered_frame = motion_filter.filter_motion(motion)
 
                 # Save any groups found
                 detection = motion_filter.annotate_data(motion, orig_frame, detection_area)
@@ -80,7 +92,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='Arg parse for two vars - camera id and detection area'
     )
-    parser.add_argument('-c', '--cam', type=int, default=1)
+    parser.add_argument('-c', '--cam', type=int, default=0)
     parser.add_argument('-a', '--det_area', type=int, default=30)
     parser.add_argument('-l', '--det_limit', type=int, default=1000)
 

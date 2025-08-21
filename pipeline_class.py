@@ -86,8 +86,6 @@ class MultipleFrameFilter:
         # Save image w/bounding box and yolo label .txt file
         cv.imwrite(img_path, original_frame)
         with open(label_path, 'w') as file:
-            print("writting")
-            breakpoint()
             for i in range(len(yolo_format['width'])):
                 # class x_center y_center width height
                 file.write(f"0 {yolo_format['x_cent'][i]} {yolo_format['y_cent'][i]} {yolo_format['width'][i]} {yolo_format['height'][i]}\n")
@@ -110,7 +108,6 @@ class MultipleFrameFilter:
             # Loop through all groups and draw bounding box
             for i in range(1, num_labels):
                 area = stats[i, cv.CC_STAT_AREA]
-                cent = centroids[i]
                 if area >= min_area and area < 7500:
                     motion_found = True
                     all_box_area.append(area)
@@ -119,8 +116,12 @@ class MultipleFrameFilter:
                     bttm_x = x + w
                     bttm_y = y + h
                     cv.rectangle(original_frame, (x, y), (bttm_x, bttm_y), (0, 255, 0), 1)
+                    # Calculate bounding box center
+                    center_x = x + w / 2.0
+                    center_y = y + h / 2.0
+                    centroid = (center_x, center_y)
                     # Save vars to later write to txt file
-                    all_box_centroids.append(cent)
+                    all_box_centroids.append(centroid)
                     all_box_widths.append(w)
                     all_box_heights.append(h)
 
@@ -141,7 +142,6 @@ class MultipleFrameFilter:
                                'y_cent': yolo_cent_y,
                                'width': yolo_width,
                                'height': yolo_height}
-                breakpoint()
 
                 if max_area < 50:
                     self.save_data(max_area, yolo_format, self.small_img_dir, original_frame)

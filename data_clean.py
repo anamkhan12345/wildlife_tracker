@@ -101,7 +101,7 @@ def yolo_format_verif(txt_file, jpg_file):
                       (int(flt_parts[0]), int(flt_parts[1])),
                       radius=0, 
                       color=(0, 0, 255), 
-                      thickness=1)
+                      thickness=2)
             cv.imshow('copy', copy)
     
     cv.waitKey(0)
@@ -113,9 +113,9 @@ def check_bb_rework(files):
 
 
 # # Data verification
-# txt_file = Path('image\\train\\3_1755291534762_area_377.txt')
-# jpg_file = Path('image\\train\\3_1755291534762_area_377.jpg')
-# yolo_format_verif(txt_file, jpg_file)
+txt_file = Path('image\\test\\medium\\1755723722933_area_102_3.txt')
+jpg_file = Path('image\\test\\medium\\1755723722933_area_102_3.jpg')
+yolo_format_verif(txt_file, jpg_file)
 # breakpoint()
 
 # Read in all the .jpg files
