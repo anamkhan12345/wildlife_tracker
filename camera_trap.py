@@ -8,9 +8,8 @@ def pipeline(cam_id, detection_area, detection_limit):
     # Define vegetation areas as rectangles (x1, y1, x2, y2)
     detector = pipeline_class.VegetationFilter()
     veg_zone = [
-        (470, 0, 639, 639),
-        (370, 440, 520, 639)
-        # (0,0,60,470)
+        (960, 0, 1919, 1079),
+        (768, 756, 960, 1079)
     ]
 
     # Motion filter over frames
@@ -23,7 +22,7 @@ def pipeline(cam_id, detection_area, detection_limit):
         print("Cannot open camera")
         exit()
 
-    # Set to 1080x1920
+    # Set to 1920x1080
     cap.set(cv.CAP_PROP_FRAME_WIDTH, 1920)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, 1080)
 
@@ -32,7 +31,6 @@ def pipeline(cam_id, detection_area, detection_limit):
     actual_h = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
     print(f"Resolution set to: {actual_w}x{actual_h}")
     print("Letting camera warm up...")
-    breakpoint()
     # Warm-up frames
     for _ in range(3):
         cap.read()
@@ -47,7 +45,7 @@ def pipeline(cam_id, detection_area, detection_limit):
             break
         else:
             # Ignore first frames as camera turns on and background stabilizes
-            if counter > 60:
+            if counter > 30:
                 # Show the re-sized webcam images
                 orig_frame = frame
                 # Grid overlay
@@ -56,7 +54,7 @@ def pipeline(cam_id, detection_area, detection_limit):
                 # Check veg zone
                 veg_plot_org = pipeline_class.plot_zone(orig_frame, veg_zone)
                 txt = str(counter)
-                cv.putText(veg_plot_org, txt, (0,639), 
+                cv.putText(veg_plot_org, txt, (0,1079), 
                         cv.FONT_HERSHEY_TRIPLEX, 0.5,
                         (0,255,0), 1, lineType=cv.LINE_AA)
 
@@ -73,14 +71,16 @@ def pipeline(cam_id, detection_area, detection_limit):
                 detection = motion_filter.annotate_data(motion, orig_frame, detection_area)
 
                 # Display diffs
-                cv.imshow('Video', veg_plot_org)
-                # cv.imshow('Grid Overlay', grid_frame)
-                cv.imshow('Vegetation Filter', motion)
+                #cv.imshow('Video', veg_plot_org)
+                #cv.imwrite('image/filter.jpg', veg_plot_org)
+                #cv.imshow('Grid Overlay', grid_frame)
+                #cv.imwrite('image/grid.jpg', grid_frame)
+                #cv.imshow('Vegetation Filter', motion)
                 #cv.imshow('Motion Filter', filtered_frame)
             else:
                 print("Waiting for background to stabilize")
 
-        if cv.waitKey(20) & 0xFF == ord('d'): # stop looping on videos after 20 miliseconds or when "d" is pressed
+        if cv.waitKey(20) & 0xFF == ord('d'): # stop looping, on videos after 20 miliseconds or when "d" is pressed
             break
         elif motion_filter.downloads > detection_limit:
             break

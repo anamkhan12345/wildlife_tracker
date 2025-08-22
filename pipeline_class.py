@@ -108,7 +108,7 @@ class MultipleFrameFilter:
             # Loop through all groups and draw bounding box
             for i in range(1, num_labels):
                 area = stats[i, cv.CC_STAT_AREA]
-                if area >= min_area and area < 7500:
+                if area >= min_area and area < 15000:
                     motion_found = True
                     all_box_area.append(area)
                     # Draw bounding box
@@ -134,8 +134,8 @@ class MultipleFrameFilter:
                 # Calculate training params for yolo labels
                 img_height = original_frame.shape[0]
                 img_width = original_frame.shape[1]
-                yolo_width = [w / img_width for w in all_box_widths]
-                yolo_height = [h / img_height for h in all_box_heights]
+                yolo_width =  [round(w / img_width, 6) for w in all_box_widths]
+                yolo_height = [round(h / img_height, 6) for h in all_box_heights]
                 yolo_cent_x = [ round(c[0] / img_width, 6) for c in all_box_centroids]
                 yolo_cent_y = [ round(c[1] / img_height, 6) for c in all_box_centroids]
                 yolo_format = {'x_cent': yolo_cent_x,
