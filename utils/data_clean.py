@@ -9,6 +9,35 @@ from pathlib import Path
 import cv2 as cv
 from datetime import datetime
 
+from pathlib import Path
+
+def check_image_label_matches(source_dir):
+
+    source_path = Path(source_dir)
+    images_dir = source_path / 'image'
+    labels_dir = source_path / 'label'
+    
+    # Get all image files
+    image_files = list(images_dir.glob('*.jpg')) + list(images_dir.glob('*.png'))
+    missing_labels = []
+
+    for img_file in image_files:
+        base_name = img_file.stem
+        label_file = labels_dir / f"{base_name}.txt"
+        
+        if not label_file.exists():
+            missing_labels.append(img_file.name)
+            print(f"✗ Missing label: {base_name}.txt for {img_file.name}")
+    
+    # Results
+    if not missing_labels:
+        print(f"✓ Perfect! All {len(image_files)} images have matching labels")
+        return True
+    else:
+        print(f"✗ Found {len(missing_labels)} images without matching labels")
+        return False
+
+
 def create_labels_df(dir, ext, delim):
     dir_ext = dir + "\*" + ext
     files = glob.glob(dir_ext)
@@ -163,11 +192,36 @@ def train_val_test_split(df):
     else:
         print(f'ERROR: df size: {n_total}, you got: {total_rows}')
 
-
-
     return file_split
 
 
+def copy_files_to_yolo_structure(file_split, source_dir, output_dir):
+    base_path = Path(output_dir)
+    source_path = Path(source_dir)
+   
+    # Source subdirectories
+    images_source = source_path / 'image'
+    labels_source = source_path / 'label'
+   
+    for split in ['train', 'val', 'test']:
+        # Create YOLO directory structure
+        (base_path / split / 'image').mkdir(parents=True, exist_ok=True)
+        (base_path / split / 'label').mkdir(parents=True, exist_ok=True)
+
+        for filename in file_split[split]:
+            base_name = Path(filename).stem
+           
+            # Source paths
+            label_source_file = labels_source / filename
+            img_source_file = images_source / f"{base_name}.jpg"
+           
+            # Destination paths
+            label_dest_file = base_path / split / 'label' / f"{base_name}.txt"
+            img_dest_file = base_path / split / 'image' / f"{base_name}.jpg"
+
+            # Move both files
+            shutil.copy2(str(img_source_file), str(img_dest_file))
+            shutil.copy2(str(label_source_file), str(label_dest_file))
 
 
 # # Data verification
@@ -176,14 +230,33 @@ def train_val_test_split(df):
 # yolo_format_verif(txt_file, jpg_file)
 
 
-# Read in all the .jpg files
-img_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\test\\image"
+# Read in all the label files
+parent_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\test"
+neg_parent_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\negative"
+output_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\yolo_set"
+
 lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\test\\label"
 neg_lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\negative\\label"
+
+# Verify that each label file has corresponding .jpg file
+yolo_formatted = check_image_label_matches(parent_dir)
+
+if not yolo_formatted:
+    exit
+
+# Create dataframe with detection info
 df_label = create_labels_df(lbl_path, '.txt', '_')
-file_split = train_val_test_split(df_label)
-breakpoint()
 df_neg_label = create_neg_labels(neg_lbl_path,'.txt', '_')
+
+# Test train val split for detections and negative detectoins
+# file_split_1 = train_val_test_split(df_label)
+# copy_files_to_yolo_structure(file_split_1, parent_dir, output_dir)
+
+
+file_split_2 = train_val_test_split(df_neg_label)
+copy_files_to_yolo_structure(file_split_2, neg_parent_dir, output_dir)
+
+# Test 
 
 # Plot areas captured and detection times
 # TODO: This is only the MAX area detected in each frame, not all bounding boxes
