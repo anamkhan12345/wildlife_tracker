@@ -1,25 +1,26 @@
 import os
 import glob
 import pandas as pd
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import shutil
 from pathlib import Path
 import cv2 as cv
+from datetime import datetime
 
-def create_data_df(dir, ext, delim):
+def create_labels_df(dir, ext, delim):
     dir_ext = dir + "\*" + ext
     files = glob.glob(dir_ext)
     areas = []
     times = []
     detections = []
-
     for f in files:
-        name, _ = os.path.splitext(f)
+        name = os.path.basename(f)  
         parts = name.split(delim)
-        aArea = float(parts[-1])
+        aArea = float(parts[2])
         areas.append(aArea)
-        aTime = float(parts[1])
+        aTime = float(parts[0])
         times.append(aTime)
         # Get total detections
         with open(f, "r") as aFile:
@@ -35,6 +36,40 @@ def create_data_df(dir, ext, delim):
         "detections": detections,
         "times": time_dt,
         "hours": hours_dt
+        })
+    
+    df = df.sort_values("times")
+
+    return df
+
+def create_neg_labels(dir, ext, delim):
+    
+    dir_ext = dir + "\*" + ext
+    files = glob.glob(dir_ext)
+    areas = [0] * len(files)
+    times = []
+    hours = []
+    detections = []
+    for f in files:
+        name = os.path.basename(f) 
+        parts = name.split(delim)
+        time_string = parts[1] + '_' + parts[2]
+        aTime = datetime.strptime(time_string, "%Y%m%d_%H%M%S")
+        times.append(aTime)
+        aHour = aTime.hour
+        hours.append(aHour)
+        # Get total detections
+        with open(f, "r") as aFile:
+            num_lines = sum(1 for _ in aFile)
+            detections.append(num_lines)
+
+
+    df = pd.DataFrame({
+        "files": files,
+        "areas": areas,
+        "detections": detections,
+        "times": times,
+        "hours": hours
         })
     
     df = df.sort_values("times")
@@ -106,22 +141,49 @@ def yolo_format_verif(txt_file, jpg_file):
     
     cv.waitKey(0)
 
-def check_bb_rework(files):
-    for f in files:
-        img = cv.imread(f)
+def train_val_test_split(df):
+    ''' This will split the data based on time of observations'''
+
+    df = df.sort_values("hours")
+    df = df.sort_values("hours")
+    n_total = len(df)
+    train_end = int(n_total * 0.7)
+    val_end = int(n_total * 0.85)
+
+    file_split = {
+        'train': df['files'].iloc[:train_end].tolist(),
+        'val': df['files'].iloc[train_end:val_end].tolist(),
+        'test': df['files'].iloc[val_end:].tolist()
+    }
+
+    # Verification
+    total_rows = sum(len(file_split[key]) for key in file_split)
+    if total_rows == n_total:
+        print("You got all the df rows")
+    else:
+        print(f'ERROR: df size: {n_total}, you got: {total_rows}')
+
+
+
+    return file_split
+
 
 
 
 # # Data verification
-txt_file = Path('image\\test\\medium\\1755723722933_area_102_3.txt')
-jpg_file = Path('image\\test\\medium\\1755723722933_area_102_3.jpg')
-yolo_format_verif(txt_file, jpg_file)
-# breakpoint()
+# txt_file = Path('image\\test\\medium\\1755723722933_area_102_3.txt')
+# jpg_file = Path('image\\test\\medium\\1755723722933_area_102_3.jpg')
+# yolo_format_verif(txt_file, jpg_file)
+
 
 # Read in all the .jpg files
-df = create_data_df('image\\train', '.jpg', '_')
-df = df.sort_values('files')
-
+img_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\test\\image"
+lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\test\\label"
+neg_lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\negative\\label"
+df_label = create_labels_df(lbl_path, '.txt', '_')
+file_split = train_val_test_split(df_label)
+breakpoint()
+df_neg_label = create_neg_labels(neg_lbl_path,'.txt', '_')
 
 # Plot areas captured and detection times
 # TODO: This is only the MAX area detected in each frame, not all bounding boxes
@@ -148,11 +210,6 @@ df = df.sort_values('files')
 # # Areas over 10,000
 # rem_areas = df[df['areas'] > 10000]
 # remove_files(rem_areas['files'])
-
-
-
-
-
 
 # TODO: Plot detections centroids on the actual original image
 

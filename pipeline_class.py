@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import time
 from collections import deque
+from datetime import datetime
 
 
 class VegetationFilter:
@@ -51,14 +52,33 @@ class MultipleFrameFilter:
         self.threshold = threshold  # Fraction of frames that must show motion
         self.frame_buffer = deque(maxlen=buffer_size)
         self.downloads = 0
+        self.neg_counter = 0
+        self.last_neg = 0
+
+        # params to reset 
+        self.motion_found = False
+        self.all_box_widths = []
+        self.all_box_heights = []
+        self.all_box_centroids = []
+        self.all_box_area = []
 
         self.small_img_dir = Path('image/test/small')
         self.med_img_dir = Path('image/test/medium')
         self.big_img_dir = Path('image/test/big')
+        self.neg_img_dir = Path('image/negative')
         self.small_img_dir.mkdir(parents=True, exist_ok=True)
         self.med_img_dir.mkdir(parents=True, exist_ok=True)
         self.big_img_dir.mkdir(parents=True, exist_ok=True)
-        
+        self.neg_img_dir.mkdir(parents=True, exist_ok=True)
+
+    def reset_vars(self):
+        self.motion_found = False
+        self.all_box_widths = []
+        self.all_box_heights = []
+        self.all_box_centroids = []
+        self.all_box_area = []
+
+
     def filter_motion(self, motion_mask):
         # Add current frame to buffer
         self.frame_buffer.append(motion_mask.astype(np.float32) / 255.0)
@@ -73,12 +93,13 @@ class MultipleFrameFilter:
         persistent_motion = (temporal_sum >= (self.threshold * self.buffer_size))
         
         return (persistent_motion * 255).astype(np.uint8)
-    
-    def save_data(self, all_box_area, yolo_format, dir_path, original_frame):
+
+
+    def save_data(self, max_area, yolo_format, dir_path, original_frame):
         # Save frame image
         timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
-        img_file = f'{timestamp}_area_{all_box_area}_{self.downloads}.jpg'
-        label_file = f'{timestamp}_area_{all_box_area}_{self.downloads}.txt'
+        img_file = f'{timestamp}_area_{max_area}_{self.downloads}.jpg'
+        label_file = f'{timestamp}_area_{max_area}_{self.downloads}.txt'
 
         img_path = os.path.join(dir_path, img_file)
         label_path = os.path.join(dir_path, label_file)
@@ -90,27 +111,48 @@ class MultipleFrameFilter:
                 # class x_center y_center width height
                 file.write(f"0 {yolo_format['x_cent'][i]} {yolo_format['y_cent'][i]} {yolo_format['width'][i]} {yolo_format['height'][i]}\n")
 
+    def yolo_annotation(self, frame, save_data):
+        # After drawing all bounding boxes - save img with drawings and yolo formatted text file
+        if self.motion_found:
+            self.downloads = self.downloads + 1
+            max_area = max(self.all_box_area)
+            print(f"Motion detected: Area={max_area}, Detection Count: {self.downloads}")
 
-    def annotate_data(self, persistent_motion, original_frame, min_area):
+            # Calculate training params for yolo labels
+            img_height = frame.shape[0]
+            img_width = frame.shape[1]
+            yolo_width =  [round(w / img_width, 6) for w in self.all_box_widths]
+            yolo_height = [round(h / img_height, 6) for h in self.all_box_heights]
+            yolo_cent_x = [ round(c[0] / img_width, 6) for c in self.all_box_centroids]
+            yolo_cent_y = [ round(c[1] / img_height, 6) for c in self.all_box_centroids]
+            yolo_format = {'x_cent': yolo_cent_x,
+                           'y_cent': yolo_cent_y,
+                           'width': yolo_width,
+                           'height': yolo_height}
+            if save_data:
+                if max_area < 50:
+                    self.save_data(max_area, yolo_format, self.small_img_dir, frame)
+                elif max_area >= 50 and max_area < 500:
+                    self.save_data(max_area, yolo_format, self.med_img_dir, frame)
+                else:
+                    self.save_data(max_area, yolo_format, self.big_img_dir, frame)
 
+    def motion_filter(self, persistent_motion, original_frame, min_area, save_data=True):
+
+        # Reset class vars
+        self.reset_vars()
         # Find connected components
         num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(
             persistent_motion, connectivity=8
         )
-        motion_found = False
-        all_box_widths = []
-        all_box_heights = []
-        all_box_centroids = []
-        all_box_area = []
-
         # Skip background label (0)
         if num_labels < 6:
             # Loop through all groups and draw bounding box
             for i in range(1, num_labels):
                 area = stats[i, cv.CC_STAT_AREA]
                 if area >= min_area and area < 15000:
-                    motion_found = True
-                    all_box_area.append(area)
+                    self.motion_found = True
+                    self.all_box_area.append(area)
                     # Draw bounding box
                     x, y, w, h = stats[i, cv.CC_STAT_LEFT:cv.CC_STAT_LEFT+4]
                     bttm_x = x + w
@@ -121,38 +163,36 @@ class MultipleFrameFilter:
                     center_y = y + h / 2.0
                     centroid = (center_x, center_y)
                     # Save vars to later write to txt file
-                    all_box_centroids.append(centroid)
-                    all_box_widths.append(w)
-                    all_box_heights.append(h)
-
-            # After drawing all bounding boxes - save img with drawings and yolo formatted text file
-            if motion_found:
-                self.downloads = self.downloads + 1
-                max_area = max(all_box_area)
-                print(f"Motion detected: Area={max_area}, Position=({x},{y}), Detection Count: {self.downloads}")
-
-                # Calculate training params for yolo labels
-                img_height = original_frame.shape[0]
-                img_width = original_frame.shape[1]
-                yolo_width =  [round(w / img_width, 6) for w in all_box_widths]
-                yolo_height = [round(h / img_height, 6) for h in all_box_heights]
-                yolo_cent_x = [ round(c[0] / img_width, 6) for c in all_box_centroids]
-                yolo_cent_y = [ round(c[1] / img_height, 6) for c in all_box_centroids]
-                yolo_format = {'x_cent': yolo_cent_x,
-                               'y_cent': yolo_cent_y,
-                               'width': yolo_width,
-                               'height': yolo_height}
-
-                if max_area < 50:
-                    self.save_data(max_area, yolo_format, self.small_img_dir, original_frame)
-                elif max_area >= 50 and max_area < 500:
-                    self.save_data(max_area, yolo_format, self.med_img_dir, original_frame)
-                else:
-                    self.save_data(max_area, yolo_format, self.big_img_dir, original_frame)
+                    self.all_box_centroids.append(centroid)
+                    self.all_box_widths.append(w)
+                    self.all_box_heights.append(h)
+                    # Generate YOLO formatting docs
+                    self.yolo_annotation(original_frame, save_data)
         else:
             print("Too much motion detected, camera possibly moving")
 
         return num_labels - 1  # Return number of motion groups found
+
+
+    def no_motion_save(self, delta, frame):
+        # Check if it's time to capture
+        current_time = time.time()
+        if current_time - self.last_neg >= delta and not self.motion_found:
+            self.neg_counter = self.neg_counter + 1
+            # Save image
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") 
+            filename = f"negative_{timestamp}_{self.neg_counter}.jpg"
+            filepath = os.path.join(self.neg_img_dir, filename) 
+            cv.imwrite(filepath, frame)
+
+            # Create empty text file for negative image
+            neg_txt_file = f"negative_{timestamp}_{self.neg_counter}.txt"
+            neg_file_path = os.path.join(self.neg_img_dir, neg_txt_file)
+            Path(neg_file_path).touch()
+
+            # Create empty text file to go with image
+            self.last_neg = current_time
+            print(f"saved random image: {self.neg_counter}")
 
 
 def add_grid(image, rows=3, cols=3, color=(255, 255, 255), thickness=2, alpha=0.8):

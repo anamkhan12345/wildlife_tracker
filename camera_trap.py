@@ -3,7 +3,7 @@ import pipeline_class
 import argparse
 import time
 
-def pipeline(cam_id, detection_area, detection_limit):
+def camera_trap(cam_id, detection_area, detection_limit):
 
     # Define vegetation areas as rectangles (x1, y1, x2, y2)
     detector = pipeline_class.VegetationFilter()
@@ -34,6 +34,10 @@ def pipeline(cam_id, detection_area, detection_limit):
     # Warm-up frames
     for _ in range(3):
         cap.read()
+
+    # No motion saves
+    delta = 300 # seconds, 5 mins
+
 
     while True:
         flag, frame = cap.read()
@@ -67,15 +71,18 @@ def pipeline(cam_id, detection_area, detection_limit):
                 # Filter for motion across multiple frames
                 #filtered_frame = motion_filter.filter_motion(motion)
 
-                # Save any groups found
-                detection = motion_filter.annotate_data(motion, orig_frame, detection_area)
+                # Filter motion found
+                detection = motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=False)
+                
+                # Save negative training data
+                motion_filter.no_motion_save(delta, orig_frame)
 
                 # Display diffs
                 #cv.imshow('Video', veg_plot_org)
                 #cv.imwrite('image/filter.jpg', veg_plot_org)
                 #cv.imshow('Grid Overlay', grid_frame)
                 #cv.imwrite('image/grid.jpg', grid_frame)
-                #cv.imshow('Vegetation Filter', motion)
+                cv.imshow('Vegetation Filter', motion)
                 #cv.imshow('Motion Filter', filtered_frame)
             else:
                 print("Waiting for background to stabilize")
@@ -94,16 +101,16 @@ def main():
     )
     parser.add_argument('-c', '--cam', type=int, default=0)
     parser.add_argument('-a', '--det_area', type=int, default=30)
-    parser.add_argument('-l', '--det_limit', type=int, default=1000)
+    parser.add_argument('-l', '--det_cnt_limit', type=int, default=1000)
 
     # Parse arguments
     args = parser.parse_args()
     cam_id = args.cam
-    detection_area = args.det_area
-    detection_limit = args.det_limit
+    min_area = args.det_area
+    detection_limit = args.det_cnt_limit
 
     # Run pipeline
-    pipeline(cam_id, detection_area, detection_limit)
+    camera_trap(cam_id, min_area, detection_limit)
 
 if __name__ == '__main__':
     main()
