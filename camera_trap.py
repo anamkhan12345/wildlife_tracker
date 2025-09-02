@@ -75,12 +75,12 @@ def camera_trap(cam_id, detection_area, detection_limit):
                 motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=True)
                 
                 # Save negative training data
-                motion_filter.no_motion_save(delta, orig_frame)
+                #motion_filter.no_motion_save(delta, orig_frame)
 
                 # Display diffs
                 cv.imshow('Video', veg_plot_org)
                 #cv.imwrite('image/filter.jpg', veg_plot_org)
-                #cv.imshow('Grid Overlay', grid_frame)
+                cv.imshow('Grid Overlay', grid_frame)
                 #cv.imwrite('image/grid.jpg', grid_frame)
                 #cv.imshow('Vegetation Filter', motion)
             else:

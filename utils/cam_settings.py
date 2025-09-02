@@ -38,4 +38,4 @@ def check_webcam_resolution(camera_index=0):
     cap.release()
 
 # Check your webcam
-check_webcam_resolution(1)  # Change to 1, 2, etc. for other cameras
+check_webcam_resolution(0)  # Change to 1, 2, etc. for other cameras
