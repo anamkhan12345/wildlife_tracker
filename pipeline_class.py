@@ -98,8 +98,8 @@ class MultipleFrameFilter:
     def save_data(self, max_area, yolo_format, dir_path, original_frame):
         # Save frame image
         timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
-        img_file = f'{timestamp}_area_{max_area}_{self.downloads}.jpg'
-        label_file = f'{timestamp}_area_{max_area}_{self.downloads}.txt'
+        img_file = f'detect_{timestamp}_area_{max_area}_{self.downloads}.jpg'
+        label_file = f'detect_{timestamp}_area_{max_area}_{self.downloads}.txt'
 
         img_path = os.path.join(dir_path, img_file)
         label_path = os.path.join(dir_path, label_file)
@@ -157,7 +157,7 @@ class MultipleFrameFilter:
                     x, y, w, h = stats[i, cv.CC_STAT_LEFT:cv.CC_STAT_LEFT+4]
                     bttm_x = x + w
                     bttm_y = y + h
-                    cv.rectangle(original_frame, (x, y), (bttm_x, bttm_y), (0, 255, 0), 1)
+                    cv.rectangle(original_frame, (x, y), (bttm_x, bttm_y), (0, 255, 0), 2)
                     # Calculate bounding box center
                     center_x = x + w / 2.0
                     center_y = y + h / 2.0
@@ -180,13 +180,13 @@ class MultipleFrameFilter:
         if current_time - self.last_neg >= delta and not self.motion_found:
             self.neg_counter = self.neg_counter + 1
             # Save image
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") 
-            filename = f"negative_{timestamp}_{self.neg_counter}.jpg"
+            timestamp = int(time.time() * 1000)
+            filename = f"negative_{timestamp}_area_0_{self.neg_counter}.jpg"
             filepath = os.path.join(self.neg_img_dir, filename) 
             cv.imwrite(filepath, frame)
 
             # Create empty text file for negative image
-            neg_txt_file = f"negative_{timestamp}_{self.neg_counter}.txt"
+            neg_txt_file = f"negative_{timestamp}_area_0_{self.neg_counter}.txt"
             neg_file_path = os.path.join(self.neg_img_dir, neg_txt_file)
             Path(neg_file_path).touch()
 

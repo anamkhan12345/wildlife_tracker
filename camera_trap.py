@@ -53,7 +53,7 @@ def camera_trap(cam_id, detection_area, detection_limit):
                 # Show the re-sized webcam images
                 orig_frame = frame
                 # Grid overlay
-                grid_frame = pipeline_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
+                #grid_frame = pipeline_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
 
                 # Check veg zone
                 veg_plot_org = pipeline_class.plot_zone(orig_frame, veg_zone)
@@ -72,18 +72,17 @@ def camera_trap(cam_id, detection_area, detection_limit):
                 #filtered_frame = motion_filter.filter_motion(motion)
 
                 # Filter motion found
-                detection = motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=False)
+                motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=True)
                 
                 # Save negative training data
                 motion_filter.no_motion_save(delta, orig_frame)
 
                 # Display diffs
-                #cv.imshow('Video', veg_plot_org)
+                cv.imshow('Video', veg_plot_org)
                 #cv.imwrite('image/filter.jpg', veg_plot_org)
                 #cv.imshow('Grid Overlay', grid_frame)
                 #cv.imwrite('image/grid.jpg', grid_frame)
-                cv.imshow('Vegetation Filter', motion)
-                #cv.imshow('Motion Filter', filtered_frame)
+                #cv.imshow('Vegetation Filter', motion)
             else:
                 print("Waiting for background to stabilize")
 
@@ -101,7 +100,7 @@ def main():
     )
     parser.add_argument('-c', '--cam', type=int, default=0)
     parser.add_argument('-a', '--det_area', type=int, default=30)
-    parser.add_argument('-l', '--det_cnt_limit', type=int, default=1000)
+    parser.add_argument('-l', '--det_cnt_limit', type=int, default=2000)
 
     # Parse arguments
     args = parser.parse_args()

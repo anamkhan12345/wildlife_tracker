@@ -246,6 +246,7 @@ if not yolo_formatted:
 
 # Create dataframe with detection info
 df_label = create_labels_df(lbl_path, '.txt', '_')
+breakpoint()
 df_neg_label = create_neg_labels(neg_lbl_path,'.txt', '_')
 
 # Test train val split for detections and negative detectoins
