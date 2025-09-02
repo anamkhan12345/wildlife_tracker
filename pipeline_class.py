@@ -54,6 +54,7 @@ class MultipleFrameFilter:
         self.downloads = 0
         self.neg_counter = 0
         self.last_neg = 0
+        self.debug = False 
 
         # params to reset 
         self.motion_found = False
@@ -77,7 +78,6 @@ class MultipleFrameFilter:
         self.all_box_heights = []
         self.all_box_centroids = []
         self.all_box_area = []
-
 
     def filter_motion(self, motion_mask):
         # Add current frame to buffer
@@ -147,7 +147,7 @@ class MultipleFrameFilter:
         )
         timestamp = int(time.time() * 1000) 
         # Skip background label (0)
-        if num_labels < 6:
+        if num_labels < 6 or self.debug:
             # Loop through all groups and draw bounding box
             for i in range(1, num_labels):
                 area = stats[i, cv.CC_STAT_AREA]

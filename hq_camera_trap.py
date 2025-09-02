@@ -22,7 +22,9 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
     # Motion filter over frames
     motion_filter = pipeline_class.MultipleFrameFilter(buffer_size=5, threshold=0.6)
+    motion_filter.debug = False 
     counter = 0
+
 
     # No motion saves
     delta = 300 # seconds, 5 mins
@@ -33,6 +35,9 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
         if counter > 30:
             # Show the re-sized webcam images
             orig_frame = frame
+            gray = cv.cvtColor(orig_frame, cv.COLOR_RGB2GRAY)
+            blur = cv.GaussianBlur(gray, (5,5),0)
+            
             # Grid overlay
             grid_frame = pipeline_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
             # Check veg zone
@@ -47,18 +52,21 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
             # Find motion
             motion = detector.adaptive_learning(orig_frame)
-
+            #motion_blur = detector.adaptive_learning(blur)
             # Filter for motion across multiple frames
             #filtered_frame = motion_filter.filter_motion(motion)
 
             # Filter motion found
             detection = motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=False)
-                    
+            #detection_blur = motion_filter.motion_filter(motion_blur, blur, detection_area, save_data=False)        
+            
             # Save negative training data
-            motion_filter.no_motion_save(delta, orig_frame)
+            #motion_filter.no_motion_save(delta, orig_frame)
 
             # Display diffs
             cv.imshow('Video', orig_frame)
+            #cv.imshow('Gray', gray)
+            #cv.imshow('Blur', blur)
             #cv.imwrite('image/filter.jpg', veg_plot_org)
             #cv.imshow('Grid Overlay', grid_frame)
             #cv.imwrite('image/grid.jpg', grid_frame)
@@ -72,7 +80,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
         elif motion_filter.downloads > detection_limit:
             break
 
-    cap.release() # closes video file
+    picam.stop()# closes video file
     cv.destroyAllWindows() # closes all windows
 
 def main():
@@ -80,7 +88,7 @@ def main():
         description='Arg parse for two vars - camera id and detection area'
     )
     parser.add_argument('-c', '--cam', type=int, default=0)
-    parser.add_argument('-a', '--det_area', type=int, default=30)
+    parser.add_argument('-a', '--det_area', type=int, default=55)
     parser.add_argument('-l', '--det_cnt_limit', type=int, default=2000)
 
     # Parse arguments
