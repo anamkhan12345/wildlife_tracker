@@ -145,6 +145,7 @@ class MultipleFrameFilter:
         num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(
             persistent_motion, connectivity=8
         )
+        timestamp = int(time.time() * 1000) 
         # Skip background label (0)
         if num_labels < 6:
             # Loop through all groups and draw bounding box
@@ -169,7 +170,7 @@ class MultipleFrameFilter:
                     # Generate YOLO formatting docs
                     self.yolo_annotation(original_frame, save_data)
         else:
-            print("Too much motion detected, camera possibly moving")
+            print(f"Too much motion detected: {timestamp}")
 
         return num_labels - 1  # Return number of motion groups found
 
