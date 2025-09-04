@@ -24,12 +24,12 @@ def check_image_label_matches(source_dir):
 
     for img_file in image_files:
         if img_file.stem not in label_stems:
-            missing_labels.append(img_file.name)
+            missing_labels.append(img_file)
             print(f"✗ Missing label: {img_file.stem}.txt for {img_file}")
 
     for label_file in label_files:
         if label_file.stem not in image_stems:
-            missing_image.append(label_file.name)
+            missing_image.append(label_file)
             print(f"✗ Missing image: {label_file.stem}.jpg for {label_file}")
 
     if not missing_labels and not missing_image:
@@ -40,7 +40,7 @@ def check_image_label_matches(source_dir):
     else:
         print(f"✗ Found {len(missing_labels)} images without matching labels")
 
-    return len(missing_labels) + len(missing_image) == 0
+    return (len(missing_labels) + len(missing_image) == 0), missing_labels, missing_image
 
 def create_df(dir, delim):
     dir_ext = dir + "\**\*.txt"
@@ -88,18 +88,10 @@ def create_df(dir, delim):
 
 def remove_files(files):
     for f in files:
-        name, _ = os.path.splitext(f)
-        jpg_file = name + '.jpg'
         if os.path.exists(f):
             os.remove(f)
         else:
             print(f'Could not find {f} file')
-
-        if os.path.exists(jpg_file):
-            os.remove(jpg_file)
-        else:
-            print(f"Could not find {jpg_file} file")
-
 
 def re_order(df):
     small_dir = Path('image/small')
@@ -246,19 +238,18 @@ lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\test"
 neg_lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\negative"
 
 # Verify that each label file has corresponding .jpg file
-parent_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\test_2"
-yolo_formatted = check_image_label_matches(parent_dir)
+parent_dir = r"C:\Users\anamk\projects\dataSets\hq_images"
+yolo_formatted, missing_labels, missing_images = check_image_label_matches(parent_dir)
 print(f"Yolo formatted: {yolo_formatted}")
-
 if not yolo_formatted:
     exit()
 
 # Create dataframe with detection info
-df_test2 = create_df(parent_dir, delim='_')
-# plot_df(df_test2)
+df = create_df(parent_dir, delim='_')
+plot_df(df)
 
 # Test train val split for detections and negative detectoins
-file_split_1 = train_val_test_split(df_test2)
+file_split_1 = train_val_test_split(df)
 copy_files_to_yolo_structure(file_split_1, output_dir)
 
 
