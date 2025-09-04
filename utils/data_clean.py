@@ -13,44 +13,57 @@ from pathlib import Path
 
 def check_image_label_matches(source_dir):
 
-    source_path = Path(source_dir)
-    images_dir = source_path / 'image'
-    labels_dir = source_path / 'label'
-    
-    # Get all image files
-    image_files = list(images_dir.glob('*.jpg')) + list(images_dir.glob('*.png'))
+    all_files = glob.glob(f"{source_dir}/**/*", recursive=True)
+    image_files = [Path(f) for f in all_files if f.endswith('.jpg')]
+    label_files = [Path(f) for f in all_files if f.endswith('.txt')]
+
+    label_stems = {f.stem for f in label_files}
+    image_stems = {f.stem for f in image_files}
     missing_labels = []
+    missing_image = []
 
     for img_file in image_files:
-        base_name = img_file.stem
-        label_file = labels_dir / f"{base_name}.txt"
-        
-        if not label_file.exists():
+        if img_file.stem not in label_stems:
             missing_labels.append(img_file.name)
-            print(f"✗ Missing label: {base_name}.txt for {img_file.name}")
-    
-    # Results
-    if not missing_labels:
+            print(f"✗ Missing label: {img_file.stem}.txt for {img_file}")
+
+    for label_file in label_files:
+        if label_file.stem not in image_stems:
+            missing_image.append(label_file.name)
+            print(f"✗ Missing image: {label_file.stem}.jpg for {label_file}")
+
+    if not missing_labels and not missing_image:
         print(f"✓ Perfect! All {len(image_files)} images have matching labels")
-        return True
+        img_file = image_files[0]
+        txt_file = next(img_file.parent.parent.rglob(f"{img_file.stem}.txt"), None)
+        yolo_format_verif(txt_file, img_file)
     else:
         print(f"✗ Found {len(missing_labels)} images without matching labels")
-        return False
 
+    return len(missing_labels) + len(missing_image) == 0
 
-def create_labels_df(dir, ext, delim):
-    dir_ext = dir + "\*" + ext
-    files = glob.glob(dir_ext)
+def create_df(dir, delim):
+    dir_ext = dir + "\**\*.txt"
+    files = glob.glob(dir_ext, recursive=True)
     areas = []
     times = []
     detections = []
+    jpg_files = []
     for f in files:
-        name = os.path.basename(f)  
+        name = os.path.basename(f)
         parts = name.split(delim)
-        aArea = float(parts[2])
+        aArea = float(parts[3])
         areas.append(aArea)
-        aTime = float(parts[0])
+        aTime = float(parts[1])
         times.append(aTime)
+
+        # Find corresponding jpg file
+        jpg = next(Path(f).parent.parent.rglob(f"{Path(f).stem}.jpg"), None)
+        jpg_files.append(str(jpg))
+        if jpg is None:
+            print(f"**** Could not find jpg for {f} *****")
+            exit(1)
+
         # Get total detections
         with open(f, "r") as aFile:
             num_lines = sum(1 for _ in aFile)
@@ -61,44 +74,11 @@ def create_labels_df(dir, ext, delim):
 
     df = pd.DataFrame({
         "files": files,
+        "jpg_files": jpg_files,
         "areas": areas,
         "detections": detections,
         "times": time_dt,
         "hours": hours_dt
-        })
-    
-    df = df.sort_values("times")
-
-    return df
-
-def create_neg_labels(dir, ext, delim):
-    
-    dir_ext = dir + "\*" + ext
-    files = glob.glob(dir_ext)
-    areas = [0] * len(files)
-    times = []
-    hours = []
-    detections = []
-    for f in files:
-        name = os.path.basename(f) 
-        parts = name.split(delim)
-        time_string = parts[1] + '_' + parts[2]
-        aTime = datetime.strptime(time_string, "%Y%m%d_%H%M%S")
-        times.append(aTime)
-        aHour = aTime.hour
-        hours.append(aHour)
-        # Get total detections
-        with open(f, "r") as aFile:
-            num_lines = sum(1 for _ in aFile)
-            detections.append(num_lines)
-
-
-    df = pd.DataFrame({
-        "files": files,
-        "areas": areas,
-        "detections": detections,
-        "times": times,
-        "hours": hours
         })
     
     df = df.sort_values("times")
@@ -151,24 +131,62 @@ def re_order(df):
 
 def yolo_format_verif(txt_file, jpg_file):
     img = cv.imread(jpg_file)
+    width = int(img.shape[1])
+    height = int(img.shape[0])
     cv.imshow('og', img)
     copy = img.copy()
+
     # class x_center y_center width height
     with open(txt_file, "r") as f:
         for line in f:
             parts = line.strip().split()
-            flt_parts = [float(x) * 640 for x in parts[1:]]
-            left = ( int(flt_parts[0] - flt_parts[2]) , int(flt_parts[1] - flt_parts[3]) )
-            right = ( int(flt_parts[0] + flt_parts[2]) , int(flt_parts[1] + flt_parts[3]) )
-            cv.rectangle(copy, left, right, (0, 255, 0), 1)
+            flt_parts = [float(x) for x in parts[1:]]
+            # Convert from normalized to pixel values
+            x_cent = float(flt_parts[0]) * width
+            y_cent = float(flt_parts[1]) * height
+            width_pix = float(flt_parts[2]) * width
+            height_pix = float(flt_parts[3]) * height
+
+            # Find corner coordinates
+            x1 = x_cent - (width_pix / 2)
+            y1 = y_cent - (height_pix / 2)
+            x2 = x_cent + (width_pix / 2)
+            y2 = y_cent + (height_pix / 2)
+
+            # Draw bounding box and center point
+            cv.rectangle(copy, 
+                         (int(x1), int(y1)), 
+                         (int(x2), int(y2)), 
+                         color=(0, 255, 0), 
+                         thickness=2)
+
             cv.circle(copy, 
-                      (int(flt_parts[0]), int(flt_parts[1])),
+                      (int(x_cent), int(y_cent)),
                       radius=0, 
                       color=(0, 0, 255), 
                       thickness=2)
             cv.imshow('copy', copy)
     
     cv.waitKey(0)
+
+def plot_df(df):
+    # Plot areas captured and detection times
+    #TODO: This is only the MAX area detected in each frame, not all bounding boxes
+    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
+
+    sns.histplot(data=df, x= 'areas', ax=axes[0,0])
+    axes[0,0].set_title("Areas")
+
+    sns.scatterplot(data=df, x='hours', y='areas', ax = axes[0,1])
+    axes[0,1].set_title('Hours vs. Areas')
+
+    sns.scatterplot(data=df, x='hours', y='detections', ax = axes[1,0])
+    axes[1,0].set_title('Hour vs. Detections')
+
+    sns.histplot(data=df, x='detections', ax = axes[1,1])
+    axes[1,1].set_title('Detections')
+
+    plt.show()
 
 def train_val_test_split(df):
     ''' This will split the data based on time of observations'''
@@ -180,13 +198,12 @@ def train_val_test_split(df):
     val_end = int(n_total * 0.85)
 
     file_split = {
-        'train': df['files'].iloc[:train_end].tolist(),
-        'val': df['files'].iloc[train_end:val_end].tolist(),
-        'test': df['files'].iloc[val_end:].tolist()
+        'train': df['files'].iloc[:train_end].tolist() + df['jpg_files'].iloc[:train_end].tolist(),
+        'val': df['files'].iloc[train_end:val_end].tolist() + df['jpg_files'].iloc[train_end:val_end].tolist(),
+        'test': df['files'].iloc[val_end:].tolist() + df['jpg_files'].iloc[val_end:].tolist()
     }
-
     # Verification
-    total_rows = sum(len(file_split[key]) for key in file_split)
+    total_rows = sum(len(file_split[key]) for key in file_split) / 2
     if total_rows == n_total:
         print("You got all the df rows")
     else:
@@ -195,34 +212,27 @@ def train_val_test_split(df):
     return file_split
 
 
-def copy_files_to_yolo_structure(file_split, source_dir, output_dir):
+def copy_files_to_yolo_structure(file_split, output_dir):
     base_path = Path(output_dir)
-    source_path = Path(source_dir)
-   
-    # Source subdirectories
-    images_source = source_path / 'image'
-    labels_source = source_path / 'label'
-   
     for split in ['train', 'val', 'test']:
+        img_dir = base_path / split / 'images'
+        label_dir = base_path / split / 'labels'
+
         # Create YOLO directory structure
-        (base_path / split / 'image').mkdir(parents=True, exist_ok=True)
-        (base_path / split / 'label').mkdir(parents=True, exist_ok=True)
+        (img_dir).mkdir(parents=True, exist_ok=True)
+        (label_dir).mkdir(parents=True, exist_ok=True)
 
         for filename in file_split[split]:
-            base_name = Path(filename).stem
-           
-            # Source paths
-            label_source_file = labels_source / filename
-            img_source_file = images_source / f"{base_name}.jpg"
-           
+            file_path = Path(filename)
             # Destination paths
-            label_dest_file = base_path / split / 'label' / f"{base_name}.txt"
-            img_dest_file = base_path / split / 'image' / f"{base_name}.jpg"
+            if file_path.suffix == '.txt':
+                dest_path = label_dir / file_path.name
+                shutil.move(str(file_path), str(dest_path))
+            elif file_path.suffix == '.jpg':
+                dest_path = img_dir / file_path.name
+                shutil.move(str(file_path), str(dest_path))
 
-            # Move both files
-            shutil.copy2(str(img_source_file), str(img_dest_file))
-            shutil.copy2(str(label_source_file), str(label_dest_file))
-
+    print("YOLO structure creation complete!")
 
 # # Data verification
 # txt_file = Path('image\\test\\medium\\1755723722933_area_102_3.txt')
@@ -231,59 +241,29 @@ def copy_files_to_yolo_structure(file_split, source_dir, output_dir):
 
 
 # Read in all the label files
-parent_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\test"
-neg_parent_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\negative"
 output_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\yolo_set"
-
-lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\test\\label"
-neg_lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\negative\\label"
+lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\test"
+neg_lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\negative"
 
 # Verify that each label file has corresponding .jpg file
+parent_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\test_2"
 yolo_formatted = check_image_label_matches(parent_dir)
+print(f"Yolo formatted: {yolo_formatted}")
 
 if not yolo_formatted:
-    exit
+    exit()
 
 # Create dataframe with detection info
-df_label = create_labels_df(lbl_path, '.txt', '_')
-breakpoint()
-df_neg_label = create_neg_labels(neg_lbl_path,'.txt', '_')
+df_test2 = create_df(parent_dir, delim='_')
+# plot_df(df_test2)
 
 # Test train val split for detections and negative detectoins
-# file_split_1 = train_val_test_split(df_label)
-# copy_files_to_yolo_structure(file_split_1, parent_dir, output_dir)
+file_split_1 = train_val_test_split(df_test2)
+copy_files_to_yolo_structure(file_split_1, output_dir)
 
 
-file_split_2 = train_val_test_split(df_neg_label)
-copy_files_to_yolo_structure(file_split_2, neg_parent_dir, output_dir)
 
-# Test 
 
-# Plot areas captured and detection times
-# TODO: This is only the MAX area detected in each frame, not all bounding boxes
-# fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-
-# sns.histplot(data=df, x= 'areas', ax=axes[0,0])
-# axes[0,0].set_title("Areas")
-
-# sns.scatterplot(data=df, x='hours', y='areas', ax = axes[0,1])
-# axes[0,1].set_title('Hours vs. Areas')
-
-# sns.scatterplot(data=df, x='hours', y='detections', ax = axes[1,0])
-# axes[1,0].set_title('Hour vs. Detections')
-
-# sns.histplot(data=df, x='detections', ax = axes[1,1])
-# axes[1,1].set_title('Detections')
-
-# plt.show()
-
-# Remove irrelevant
-# rem_det = df[df['detections'] > 5 ]
-# remove_files(rem_det['files'])
-
-# # Areas over 10,000
-# rem_areas = df[df['areas'] > 10000]
-# remove_files(rem_areas['files'])
 
 # TODO: Plot detections centroids on the actual original image
 
