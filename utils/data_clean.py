@@ -1,13 +1,11 @@
 import os
 import glob
 import pandas as pd
-import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import shutil
 from pathlib import Path
 import cv2 as cv
-from datetime import datetime
 
 from pathlib import Path
 
@@ -251,10 +249,3 @@ plot_df(df)
 # Test train val split for detections and negative detectoins
 file_split_1 = train_val_test_split(df)
 copy_files_to_yolo_structure(file_split_1, output_dir)
-
-
-
-
-
-# TODO: Plot detections centroids on the actual original image
-
