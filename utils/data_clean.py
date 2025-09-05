@@ -232,20 +232,18 @@ def copy_files_to_yolo_structure(file_split, output_dir):
 
 # Read in all the label files
 output_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\yolo_set"
-lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\test"
-neg_lbl_path = "C:\\Users\\anamk\\projects\\wildlife_tracker\\image\\negative"
+final_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\final_yolo_set"
 
 # Verify that each label file has corresponding .jpg file
-parent_dir = r"C:\Users\anamk\projects\dataSets\hq_images"
-yolo_formatted, missing_labels, missing_images = check_image_label_matches(parent_dir)
+yolo_formatted, missing_labels, missing_images = check_image_label_matches(final_dir)
 print(f"Yolo formatted: {yolo_formatted}")
 if not yolo_formatted:
     exit()
 
 # Create dataframe with detection info
-df = create_df(parent_dir, delim='_')
+df = create_df(final_dir, delim='_')
 plot_df(df)
 
-# Test train val split for detections and negative detectoins
-file_split_1 = train_val_test_split(df)
-copy_files_to_yolo_structure(file_split_1, output_dir)
+# # Test train val split for detections and negative detectoins
+# file_split_1 = train_val_test_split(df)
+# copy_files_to_yolo_structure(file_split_1, final_dir)
