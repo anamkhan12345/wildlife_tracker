@@ -95,6 +95,21 @@ class MultipleFrameFilter:
         return (persistent_motion * 255).astype(np.uint8)
 
 
+    def intensity_filter(self, original_frame, label, stats, brt_thresh=200):
+        if len(original_frame) == 3:
+            gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+        else:
+            original_frame
+        valid_detects = []
+        
+        for i in range(1, num_labels):
+            possible_det = (labels == i)
+            avg_brightness = np.mean(gray[component_mask])
+        if avg_brightness <  brt_thresh:
+            valid_detects.append(i) 
+
+        return valid_components
+
     def save_data(self, max_area, yolo_format, dir_path, original_frame):
         # Save frame image
         timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
@@ -145,13 +160,16 @@ class MultipleFrameFilter:
         num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(
             persistent_motion, connectivity=8
         )
+	# TODO: Filter out clouds based on intensity
+        #valid_detects = intensity_filter(gray_frame, label, stats, brt_thresh=200)
+
         timestamp = int(time.time() * 1000) 
         # Skip background label (0)
         if num_labels < 6 or self.debug:
             # Loop through all groups and draw bounding box
             for i in range(1, num_labels):
                 area = stats[i, cv.CC_STAT_AREA]
-                if area >= min_area and area < 15000:
+                if area >= min_area and area < 1036800:
                     self.motion_found = True
                     self.all_box_area.append(area)
                     # Draw bounding box

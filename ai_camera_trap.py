@@ -108,6 +108,7 @@ def run(model='models/best_09082025.pt', camera_id=0, width=1920, height=1080) -
     # Continuously capture images from the camera and run inference
     while cap.isOpened():
         success, image = cap.read()
+        breakpoint()
         if not success:
             sys.exit(
                 'ERROR: Unable to read from webcam. Please verify your webcam settings.'
