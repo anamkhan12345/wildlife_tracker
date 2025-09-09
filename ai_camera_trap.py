@@ -28,12 +28,12 @@ def ncnn_model(model_path):
     return ncnn_model
 
 def pre_process(img):
-    img = cv2.flip(img, 1) # Because we are using a webcam
-    image_resized = cv2.resize(img, (640,640))
+    #img = cv2.flip(img, 1) # Because we are using a webcam
+    #image_resized = cv2.resize(img, (640,640))
 
     # TODO: Apply sunlight reduction based on time of day
-    blur = cv2.GaussianBlur(image_resized, (5,5), cv2.BORDER_DEFAULT)
-    rgb_image = cv2.cvtColor(image_resized, cv2.COLOR_BGR2RGB)
+    #blur = cv2.GaussianBlur(image_resized, (5,5), cv2.BORDER_DEFAULT)
+    rgb_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     return rgb_image
 
@@ -83,7 +83,7 @@ def parse_detection(detection):
 
 
 
-def run(model='models/best.pt', camera_id=0, width=640, height=640) -> None:
+def run(model='models/best_09082025.pt', camera_id=0, width=1920, height=1080) -> None:
     """Continuously run inference on images acquired from the camera.
 
     Args:
