@@ -45,9 +45,13 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
             blur = cv.GaussianBlur(gray, (5,5),0)
             if ML_model:
                 result = model(orig_frame) 
-                annotated_frame = ai_camera_trap.parse_detection(result) 
+                annotated_frame = ai_camera_trap.parse_detection(result)
+                
                 if result[0].boxes.id is not None: 
-                    cv.imshow('model detection', annotated_frame)
+                    timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
+                    img_name = f"image/detection_{timestamp}.jpg"
+                    cv.imwrite(img_name, annotated_frame)
+                #     cv.imshow('model detection', annotated_frame)
             else:
                 # Grid overlay
                 grid_frame = pipeline_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
