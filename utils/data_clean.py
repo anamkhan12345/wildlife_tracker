@@ -231,19 +231,22 @@ def copy_files_to_yolo_structure(file_split, output_dir):
 
 
 # Read in all the label files
-output_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\yolo_set"
-final_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\final_yolo_set"
+input_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\final_yolo_set"
+output_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\yolo_bird_data"
+
 
 # Verify that each label file has corresponding .jpg file
-yolo_formatted, missing_labels, missing_images = check_image_label_matches(final_dir)
+yolo_formatted, missing_labels, missing_images = check_image_label_matches(input_dir)
 print(f"Yolo formatted: {yolo_formatted}")
 if not yolo_formatted:
+    breakpoint()
     exit()
 
 # Create dataframe with detection info
-df = create_df(final_dir, delim='_')
+df = create_df(input_dir, delim='_')
+breakpoint()
 plot_df(df)
 
 # # Test train val split for detections and negative detectoins
-# file_split_1 = train_val_test_split(df)
-# copy_files_to_yolo_structure(file_split_1, final_dir)
+file_split_1 = train_val_test_split(df)
+copy_files_to_yolo_structure(file_split_1, output_dir)

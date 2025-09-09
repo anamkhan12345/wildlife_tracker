@@ -9,7 +9,8 @@ def camera_trap(cam_id, detection_area, detection_limit):
     detector = pipeline_class.VegetationFilter()
     veg_zone = [
         (960, 0, 1919, 1079),
-        (768, 756, 960, 1079)
+        (768, 930, 960, 1079),
+        (800, 0, 1919, 756)
     ]
 
     # Motion filter over frames
@@ -36,7 +37,7 @@ def camera_trap(cam_id, detection_area, detection_limit):
         cap.read()
 
     # No motion saves
-    delta = 300 # seconds, 5 mins
+    delta = 180 # seconds, 3 mins
 
 
     while True:
@@ -53,7 +54,7 @@ def camera_trap(cam_id, detection_area, detection_limit):
                 # Show the re-sized webcam images
                 orig_frame = frame
                 # Grid overlay
-                #grid_frame = pipeline_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
+                grid_frame = pipeline_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
 
                 # Check veg zone
                 veg_plot_org = pipeline_class.plot_zone(orig_frame, veg_zone)
@@ -72,15 +73,15 @@ def camera_trap(cam_id, detection_area, detection_limit):
                 #filtered_frame = motion_filter.filter_motion(motion)
 
                 # Filter motion found
-                motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=True)
+                motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=False)
                 
                 # Save negative training data
-                #motion_filter.no_motion_save(delta, orig_frame)
+                motion_filter.no_motion_save(delta, orig_frame)
 
                 # Display diffs
-                cv.imshow('Video', veg_plot_org)
+                #cv.imshow('Video', veg_plot_org)
                 #cv.imwrite('image/filter.jpg', veg_plot_org)
-                cv.imshow('Grid Overlay', grid_frame)
+                #cv.imshow('Grid Overlay', grid_frame)
                 #cv.imwrite('image/grid.jpg', grid_frame)
                 #cv.imshow('Vegetation Filter', motion)
             else:
