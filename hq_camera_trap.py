@@ -32,8 +32,8 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
     # Setup ML model
     model_path = r'models/best_09082025.pt'
-    bird_model = bird_model.BirdModel()
-    bird_model.ncnn_model(model_path)
+    detection_model = bird_model.BirdModel()
+    detection_model.ncnn_model(model_path)
 
     while True:
         frame = picam.capture_array()
@@ -44,11 +44,11 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
             gray = cv.cvtColor(orig_frame, cv.COLOR_RGB2GRAY)
             blur = cv.GaussianBlur(gray, (5,5),0)
 
-            if bird_model.ML:
-                result = bird_model.model(orig_frame) 
-                bird_model.parse_detection(result)
+            if detection_model.ML:
+                result = detection_model.model(orig_frame) 
+                detection_model.parse_detection(result)
 
-                if bird_model.detection:
+                if detection_model.detection:
                     timestamp = time.strftime("%Y%m%d-%H%M%S")
                     file_name = f"raw_bird_{timestamp}.jpg"
                     cv.imwrite(file_name, frame)
@@ -92,7 +92,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
         if cv.waitKey(20) & 0xFF == ord('d'): # stop looping, on videos after 20 miliseconds or when "d" is pressed
             break
-        elif motion_filter.downloads > detection_limit:
+        elif motion_filter.downloads > detection_limit or detection_model.downloads > detection_limit:
             break
 
     picam.stop()# closes video file
@@ -104,7 +104,7 @@ def main():
     )
     parser.add_argument('-c', '--cam', type=int, default=0)
     parser.add_argument('-a', '--det_area', type=int, default=55)
-    parser.add_argument('-l', '--det_cnt_limit', type=int, default=2000)
+    parser.add_argument('-l', '--det_cnt_limit', type=int, default=50)
 
     # Parse arguments
     args = parser.parse_args()

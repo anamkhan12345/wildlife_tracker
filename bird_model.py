@@ -7,7 +7,7 @@ import requests
 
 class BirdModel:
     def __init__(self):
-        self.counter = 0
+        self.downloads = 0
         self.detection = False
         self.ML = True
         self.model = None
@@ -52,7 +52,7 @@ class BirdModel:
         if totalDetections > 0:
             print("detection")
             self.detection = True
-            self.counter += 1
+            self.downloads += 1
             labels = [detection.names[x] for x in cls.tolist()]
             label = ", ".join(labels) 
             # TODO: How to store multiple confidence intervals?
