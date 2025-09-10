@@ -1,9 +1,6 @@
-import argparse
 import sys
 import time
-import subprocess
 from ultralytics import YOLO
-import os
 import cv2
 import utils
 import ncnn
@@ -12,74 +9,7 @@ from datetime import datetime
 import sqlite3
 import requests
 
-def ncnn_model(model_path):
-    # Load the YOLO11 model
-    model = YOLO(model_path)
 
-    # Export the model to NCNN format
-    file,_ = os.path.splitext(model_path)
-    expected_file_path = file +"_ncnn_model"
-    if not os.path.exists(expected_file_path):
-        model.export(format="ncnn")  # creates '/yolo11n_ncnn_model'
-
-    # Load the exported NCNN model
-    ncnn_model = YOLO(expected_file_path)
-
-    return ncnn_model
-
-def pre_process(img):
-    #img = cv2.flip(img, 1) # Because we are using a webcam
-    #image_resized = cv2.resize(img, (640,640))
-
-    # TODO: Apply sunlight reduction based on time of day
-    #blur = cv2.GaussianBlur(image_resized, (5,5), cv2.BORDER_DEFAULT)
-    rgb_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-    return rgb_image
-
-
-def import_db(metadata, filename):
-
-    # Save metadata to SQLite database locally
-    url = "http://192.168.0.159:8000/upload"
-
-    with open(filename, "rb") as img_file:
-        response = requests.post(
-            url,
-            files={"image": img_file},
-            data=metadata
-            )
-
-    print(response.json())
-
-
-def parse_detection(detection):
-
-    detection = detection[0] 
-    conf = detection.boxes.conf
-    aId = detection.boxes.id
-    cls = detection.boxes.cls
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") 
-    totalDetections = cls.numel()
-    clsList = cls.tolist()
-    annotated_frame = detection.plot()
-
-    if totalDetections > 0:
-        print("detection")
-        labels = [detection.names[x] for x in cls.tolist()]
-        label = ", ".join(labels) 
-        # TODO: How to store multiple confidence intervals?
-        metadata = {
-		"label": labels,
-		"confidence": totalDetections,
-                "timestamp": timestamp
-		}
-
-        file_name = label + "_" + timestamp + ".jpg"
-        cv2.imwrite(file_name, annotated_frame)
-        #import_db(metadata, file_name) 
-
-    return annotated_frame
 
 
 

@@ -1,12 +1,12 @@
 import cv2 as cv
-import pipeline_class
+import motion_class
 import argparse
 import time
 
 def camera_trap(cam_id, detection_area, detection_limit):
 
     # Define vegetation areas as rectangles (x1, y1, x2, y2)
-    detector = pipeline_class.VegetationFilter()
+    detector = motion_class.VegetationFilter()
     veg_zone = [
         (960, 0, 1919, 1079),
         (768, 930, 960, 1079),
@@ -14,7 +14,7 @@ def camera_trap(cam_id, detection_area, detection_limit):
     ]
 
     # Motion filter over frames
-    motion_filter = pipeline_class.MultipleFrameFilter(buffer_size=5, threshold=0.6)
+    motion_filter = motion_class.MultipleFrameFilter(buffer_size=5, threshold=0.6)
     counter = 0
 
     # Set up camera
@@ -54,10 +54,10 @@ def camera_trap(cam_id, detection_area, detection_limit):
                 # Show the re-sized webcam images
                 orig_frame = frame
                 # Grid overlay
-                grid_frame = pipeline_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
+                grid_frame = motion_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
 
                 # Check veg zone
-                veg_plot_org = pipeline_class.plot_zone(orig_frame, veg_zone)
+                veg_plot_org = motion_class.plot_zone(orig_frame, veg_zone)
                 txt = str(counter)
                 cv.putText(veg_plot_org, txt, (0,1079), 
                         cv.FONT_HERSHEY_TRIPLEX, 0.5,

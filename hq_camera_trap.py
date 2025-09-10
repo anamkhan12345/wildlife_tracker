@@ -1,7 +1,7 @@
 from picamera2 import Picamera2
 import cv2 as cv
-import pipeline_class
-import ai_camera_trap
+import motion_class
+import bird_model
 import argparse
 import time
 
@@ -15,14 +15,14 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     picam.start()
     
     # Define vegetation areas as rectangles (x1, y1, x2, y2)
-    detector = pipeline_class.VegetationFilter()
+    detector = motion_class.VegetationFilter()
     veg_zone = [
             (960, 0, 1919, 1079),
             (768, 756, 960, 1079)
         ]
 
     # Motion filter over frames
-    motion_filter = pipeline_class.MultipleFrameFilter(buffer_size=5, threshold=0.6)
+    motion_filter = motion_class.MultipleFrameFilter(buffer_size=5, threshold=0.6)
     motion_filter.debug = False 
     counter = 0
 
@@ -32,8 +32,8 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
     # Setup ML model
     model_path = r'models/best_09082025.pt'
-    model = ai_camera_trap.ncnn_model(model_path)
-    ML_model = True
+    bird_model = bird_model.BirdModel()
+    bird_model.ncnn_model(model_path)
 
     while True:
         frame = picam.capture_array()
@@ -43,42 +43,40 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
             orig_frame = frame
             gray = cv.cvtColor(orig_frame, cv.COLOR_RGB2GRAY)
             blur = cv.GaussianBlur(gray, (5,5),0)
-            if ML_model:
-                result = model(orig_frame) 
-                annotated_frame = ai_camera_trap.parse_detection(result)
-                
-                if result[0].boxes.id is not None: 
-                    timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
-                    img_name = f"image/detection_{timestamp}.jpg"
-                    cv.imwrite(img_name, annotated_frame)
-                #     cv.imshow('model detection', annotated_frame)
+
+            if bird_model.ML:
+                result = bird_model.model(orig_frame) 
+                bird_model.parse_detection(result)
+
+                if bird_model.detection:
+                    timestamp = time.strftime("%Y%m%d-%H%M%S")
+                    file_name = f"raw_bird_{timestamp}.jpg"
+                    cv.imwrite(file_name, frame)
             else:
                 # Grid overlay
-                grid_frame = pipeline_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
+                grid_frame = motion_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)
+                
                 # Check veg zone
-                #veg_plot_org = pipeline_class.plot_zone(orig_frame, veg_zone)
-                #txt = str(counter)
-                #cv.putText(veg_plot_org, txt, (0,1079), 
-                #            cv.FONT_HERSHEY_TRIPLEX, 0.5,
-                #            (0,255,0), 1, lineType=cv.LINE_AA)
+                veg_plot_org = motion_class.plot_zone(orig_frame, veg_zone)
+                txt = str(counter)
+                cv.putText(veg_plot_org, txt, (0,1079), 
+                           cv.FONT_HERSHEY_TRIPLEX, 0.5,
+                           (0,255,0), 1, lineType=cv.LINE_AA)
 
                 # Set Vegetation areas
-                #detector.set_vegetation_zones(orig_frame.shape, veg_zone)
+                detector.set_vegetation_zones(orig_frame.shape, veg_zone)
 
                 # Find motion
-                #motion = detector.adaptive_learning(gray)
-                #motion_blur = detector.adaptive_learning(blur)
-                # Filter for motion across multiple frames
-                #filtered_frame = motion_filter.filter_motion(motion)
+                motion = detector.adaptive_learning(gray)
+                motion_blur = detector.adaptive_learning(blur)
 
                 # Filter motion found
-                #detection = motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=False)
-                #detection_blur = motion_filter.motion_filter(motion_blur, blur, detection_area, save_data=False)        
-            
+                detection = motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=False)
+
                 # Save negative training data
                 # TODO: Instead of hidden class var, should use motion_filter return value to dictate
                 # no_motion saving
-                #motion_filter.no_motion_save(delta, orig_frame)
+                motion_filter.no_motion_save(delta, orig_frame)
 
                 # Display diffs
                 #cv.imshow('Video', orig_frame)

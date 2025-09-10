@@ -95,20 +95,20 @@ class MultipleFrameFilter:
         return (persistent_motion * 255).astype(np.uint8)
 
 
-    def intensity_filter(self, original_frame, label, stats, brt_thresh=200):
-        if len(original_frame) == 3:
-            gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
-        else:
-            original_frame
-        valid_detects = []
+    # def intensity_filter(self, original_frame, label, stats, brt_thresh=200):
+    #     if len(original_frame) == 3:
+    #         gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+    #     else:
+    #         original_frame
+    #     valid_detects = []
         
-        for i in range(1, num_labels):
-            possible_det = (labels == i)
-            avg_brightness = np.mean(gray[component_mask])
-        if avg_brightness <  brt_thresh:
-            valid_detects.append(i) 
+    #     for i in range(1, num_labels):
+    #         possible_det = (labels == i)
+    #         avg_brightness = np.mean(gray[component_mask])
+    #     if avg_brightness <  brt_thresh:
+    #         valid_detects.append(i) 
 
-        return valid_components
+    #     return valid_components
 
     def save_data(self, max_area, yolo_format, dir_path, original_frame):
         # Save frame image
