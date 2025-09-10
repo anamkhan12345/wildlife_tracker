@@ -49,7 +49,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                 detection_model.parse_detection(result)
 
                 if detection_model.detection:
-                    timestamp = time.strftime("%Y%m%d-%H%M%S")
+                    timestamp = time.strftime("%Y%m%d_%H%M%S")
                     file_name = f"raw_bird_{timestamp}.jpg"
                     cv.imwrite(file_name, frame)
             else:
