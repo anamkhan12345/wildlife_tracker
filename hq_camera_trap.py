@@ -46,12 +46,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
             if detection_model.ML:
                 result = detection_model.model(orig_frame) 
-                detection_model.parse_detection(result)
-
-                if detection_model.detection:
-                    timestamp = time.strftime("%Y%m%d_%H%M%S")
-                    file_name = f"raw_bird_{timestamp}.jpg"
-                    cv.imwrite(file_name, frame)
+                detection_model.parse_detection(result, frame)
             else:
                 # Grid overlay
                 grid_frame = motion_class.add_grid(orig_frame, rows=10, cols=10, thickness=1, alpha=0.5)

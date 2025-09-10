@@ -3,6 +3,7 @@ import cv2 as cv
 from ultralytics import YOLO
 import numpy as np
 from datetime import datetime
+import time
 import requests
 
 class BirdModel:
@@ -37,9 +38,13 @@ class BirdModel:
         return rgb_image
 
 
-    def parse_detection(self, detection):
+    def parse_detection(self, detection_result, original_frame):
 
-        detection = detection[0] 
+        detection = detection_result[0]
+        boxes = [x.xywh.tolist() for x in detection.boxes]
+        areas = [x[0][2] * x[0][3] for x in boxes]
+        max_area = int(max(areas)) if areas else 0
+
         conf = detection.boxes.conf
         aId = detection.boxes.id
         cls = detection.boxes.cls
@@ -61,10 +66,14 @@ class BirdModel:
             "confidence": totalDetections,
                     "timestamp": timestamp
             }
-
-            file_name = label + "_" + timestamp + ".jpg"
-            cv.imwrite(file_name, annotated_frame)
-            #import_db(metadata, file_name) 
+            timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
+            img_file = f'detect_{timestamp}_area_{max_area}_{self.downloads}.jpg'
+            raw_file = f'raw_{timestamp}_area_{max_area}_{self.downloads}.jpg'
+            cv.imwrite(img_file, annotated_frame)
+            cv.imwrite(raw_file, original_frame)
+            #import_db(metadata, file_name)
+        else:
+            pass
 
         return annotated_frame
 
