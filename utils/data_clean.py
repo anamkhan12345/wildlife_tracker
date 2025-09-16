@@ -73,6 +73,11 @@ def create_df(dir, delim):
     jpg_size = []
     box_area = []
     box_cent = []
+    x_1 = []
+    y_1 = []
+    x_2 = []
+    y_2 = []
+
     ar = []
     data_class = []
 
@@ -97,18 +102,26 @@ def create_df(dir, delim):
             print(f"**** Could not find jpg for {f} *****")
             exit(1)
         else:
-            # Extract more features
-            img_size, xywh = xywh_pixel(f, jpg)
+            # Extract bbox info
+            img_size, coordinates = xywh_pixel(f, jpg)
             img_size_str = str(img_size)
             aspect_ratio = ( img_size[0] / img_size[1] )
-            bbox_areas = [x[2]* x[3] for x in xywh]
-            bbox_centroids = [(x[0], x[1]) for x in xywh]
+            bbox_areas = [x['width']* x['height'] for x in coordinates]
+            bbox_centroids = [(x['x_cent'], x['y_cent']) for x in coordinates]
+            x1 = [x['x1'] for x in coordinates]
+            y1 = [x['y1'] for x in coordinates]
+            x2 = [x['x2'] for x in coordinates]
+            y2 = [x['y2'] for x in coordinates]
 
             # Set up for df
             jpg_size.append(img_size_str)
             ar.append(aspect_ratio)
             box_area.append(bbox_areas)
             box_cent.append(bbox_centroids)
+            x_1.append(x1)
+            y_1.append(y1)
+            x_2.append(x2)
+            y_2.append(y2)
 
         # Get total detections
         with open(f, "r") as aFile:
@@ -117,9 +130,9 @@ def create_df(dir, delim):
 
     time_dt = pd.to_datetime(times, unit='ms', utc=True).tz_convert('US/Eastern')
     hours_dt = [x.hour for x in time_dt]
-
     df = pd.DataFrame({
         "class": data_class,
+        "detections": detections,
         "files": files,
         "jpg_files": jpg_files,
         "jpg_size": jpg_size,
@@ -127,7 +140,10 @@ def create_df(dir, delim):
         "max_areas": max_areas,
         "bbox_area": box_area,
         "bbox_centroid": box_cent,
-        "detections": detections,
+        "bbox_x1":x_1,
+        "bbox_y1":y_1,
+        "bbox_x2":x_2,
+        "bbox_y2":y_2,
         "times": time_dt,
         "hours": hours_dt
         })
@@ -177,56 +193,66 @@ def xywh_pixel(txt_file, jpg_file):
     width = int(img.shape[1])
     height = int(img.shape[0])
     img_w_h = [width, height]
-    xywh_px = []
+    coordinates = []
 
     # class x_center y_center width height
     with open(txt_file, "r") as f:
         for line in f:
             parts = line.strip().split()
             flt_parts = [float(x) for x in parts[1:]]
-            # Convert from normalized to pixel values
+
+            # Find pixel values from yolo formatting
             x_cent = float(flt_parts[0]) * width
             y_cent = float(flt_parts[1]) * height
             width_pix = float(flt_parts[2]) * width
             height_pix = float(flt_parts[3]) * height
-            px_val = [x_cent, y_cent, width_pix, height_pix]
-            xywh_px.append(px_val)
 
-    return img_w_h, xywh_px
+            # Find boudning box pixel values from yolo formatting
+            x1 = x_cent - (width_pix / 2)
+            y1 = y_cent - (height_pix / 2)
+            x2 = x_cent + (width_pix / 2)
+            y2 = y_cent + (height_pix / 2)
 
-def yolo_format_verif(txt_file, jpg_file):
+            bbox_info = {'x1': x1, 'y1': y1, 'x2': x2, 'y2': y2, 
+                         'x_cent': x_cent, 'y_cent': y_cent,
+                         'width': width_pix, 'height': height_pix}
+
+            coordinates.append(bbox_info)
+
+
+    return img_w_h, coordinates
+
+def yolo_format_verif(txt_file, jpg_file, show_comp=False):
     img  = cv.imread(jpg_file)
     copy = img.copy()
-    _, xywh = xywh_pixel(txt_file, jpg_file)
- 
-    for coords in xywh:
+    _, coordinates = xywh_pixel(txt_file, jpg_file)
 
-        # Extract coords
-        x_cent, y_cent, width_pix, height_pix = coords
+    for i in range(len(coordinates['x1'])):
+        x1 = coordinates['x1'][i]
+        y1 = coordinates['y1'][i]
+        x2 = coordinates['x2'][i]
+        y2 = coordinates['y2'][i]
+        x_cent = coordinates['x_cent'][i]
+        y_cent = coordinates['y_cent'][i]
 
-        # Find corner coordinates
-        x1 = x_cent - (width_pix / 2)
-        y1 = y_cent - (height_pix / 2)
-        x2 = x_cent + (width_pix / 2)
-        y2 = y_cent + (height_pix / 2)
-
-        # Draw bounding box and center point
         cv.rectangle(copy, 
-                (int(x1), int(y1)), 
-                (int(x2), int(y2)), 
-                color=(0, 255, 0), 
-                thickness=2)
+                    (int(x1), int(y1)), 
+                    (int(x2), int(y2)), 
+                    color=(0, 255, 0), 
+                    thickness=2)
 
         cv.circle(copy, 
-                (int(x_cent), int(y_cent)),
-                radius=0, 
-                color=(0, 0, 255), 
-                thickness=2)
-    
+                    (int(x_cent), int(y_cent)),
+                    radius=0, 
+                    color=(0, 0, 255), 
+                    thickness=2)
+
+
     cv.imshow('copy', copy)
     cv.imshow('og', img)
     cv.waitKey(0)
 
+    return coordinates
 
 
 def train_val_test_split(df):

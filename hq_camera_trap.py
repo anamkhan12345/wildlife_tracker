@@ -60,20 +60,14 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                            (0,255,0), 1, lineType=cv.LINE_AA)
 
                 # Set Vegetation areas
-                detector.set_vegetation_zones(orig_frame.shape, veg_zone)
+                #detector.set_vegetation_zones(orig_frame.shape, veg_zone)
 
                 # Find motion
                 motion = detector.adaptive_learning(gray)
-                motion_blur = detector.adaptive_learning(blur)
 
                 # Filter motion found
-                detection = motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=True)
-                if motion_filter.motion_found and motion_filter.frame_detect > 1:
-                    timestamp = int(time.time() * 1000)
-                    max_area = max(motion_filter.all_box_area)
-                    raw_file = f'raw_{timestamp}_area_{max_area}_motion_{motion_filter.downloads}.jpg'
-                    cv.imwrite(raw_file, frame)
- 
+                motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=True)
+
                 # Save negative training data
                 # TODO: Instead of hidden class var, should use motion_filter return value to dictate
                 # no_motion saving

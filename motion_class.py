@@ -111,25 +111,29 @@ class MultipleFrameFilter:
 
     #     return valid_components
 
-    def save_data(self, max_area, yolo_format, dir_path, original_frame):
+    def save_data(self, max_area, yolo_format, dir_path, bbox_frame, og_frame):
         # Save frame image
         timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
         img_file = f'detect_{timestamp}_area_{max_area}_{self.downloads}.jpg'
+        raw_file = f'raw_{timestamp}_area_{max_area}_motion_{self.downloads}.jpg'
         label_file = f'detect_{timestamp}_area_{max_area}_{self.downloads}.txt'
         
         img_path = os.path.join(dir_path, img_file)
+        raw_path = os.path.join(dir_path, raw_file)
         label_path = os.path.join(dir_path, label_file)
 
         # Save image w/bounding box and yolo label .txt file
-        cv.imwrite(img_path, original_frame)
+        cv.imwrite(img_path, bbox_frame)
+        cv.imwrite(raw_path, og_frame)
         with open(label_path, 'w') as file:
             for i in range(len(yolo_format['width'])):
                 # class x_center y_center width height
                 file.write(f"0 {yolo_format['x_cent'][i]} {yolo_format['y_cent'][i]} {yolo_format['width'][i]} {yolo_format['height'][i]}\n")
 
-    def yolo_annotation(self, frame, save_data):
+    def yolo_annotation(self, og_frame, save_data):
         # After drawing all bounding boxes - save img with drawings and yolo formatted text file
         if self.motion_found:
+            frame = og_frame.copy()
             self.downloads = self.downloads + 1
             max_area = max(self.all_box_area)
             print(f"Motion detected: Area={max_area}, Detection Count: {self.downloads}")
@@ -147,11 +151,11 @@ class MultipleFrameFilter:
                            'height': yolo_height}
             if save_data:
                 if max_area < 50:
-                    self.save_data(max_area, yolo_format, self.small_img_dir, frame)
+                    self.save_data(max_area, yolo_format, self.small_img_dir, frame, og_frame)
                 elif max_area >= 50 and max_area < 500:
-                    self.save_data(max_area, yolo_format, self.med_img_dir, frame)
+                    self.save_data(max_area, yolo_format, self.med_img_dir, frame, og_frame)
                 else:
-                    self.save_data(max_area, yolo_format, self.big_img_dir, frame)
+                    self.save_data(max_area, yolo_format, self.big_img_dir, frame, og_frame)
 
     def motion_filter(self, persistent_motion, original_frame, min_area, save_data=True):
 
@@ -166,7 +170,7 @@ class MultipleFrameFilter:
 
         timestamp = int(time.time() * 1000) 
         # Skip background label (0)
-        if num_labels < 6 or self.debug:
+        if (num_labels < 6 and num_labels > 1) or self.debug:
             # Loop through all groups and draw bounding box
             for i in range(1, num_labels):
                 area = stats[i, cv.CC_STAT_AREA]
