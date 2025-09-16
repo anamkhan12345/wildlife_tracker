@@ -6,8 +6,9 @@ import matplotlib.pyplot as plt
 import shutil
 from pathlib import Path
 import cv2 as cv
-
 from pathlib import Path
+from PIL import Image
+from PIL.ExifTags import TAGS
 
 def check_image_label_matches(source_dir):
 
@@ -32,6 +33,7 @@ def check_image_label_matches(source_dir):
 
     if not missing_labels and not missing_image:
         print(f"✓ Perfect! All {len(image_files)} images have matching labels")
+        breakpoint()
         img_file = image_files[0]
         txt_file = next(img_file.parent.parent.rglob(f"{img_file.stem}.txt"), None)
         yolo_format_verif(txt_file, img_file)
@@ -40,18 +42,51 @@ def check_image_label_matches(source_dir):
 
     return (len(missing_labels) + len(missing_image) == 0), missing_labels, missing_image
 
+def extract_meta_data(jpg_file):
+ with Image.open(jpg_file) as img:
+        # Basic image info
+        info = {
+            'filename': jpg_file,
+            'format': img.format,
+            'mode': img.mode,
+            'size': img.size,
+            'width': img.width,
+            'height': img.height
+        }
+        
+        # EXIF data if available
+        exifdata = img.getexif()
+        if exifdata:
+            for tag_id, value in exifdata.items():
+                tag = TAGS.get(tag_id, tag_id)
+                info[tag] = value
+                
+        return info
+
 def create_df(dir, delim):
     dir_ext = dir + "\**\*.txt"
     files = glob.glob(dir_ext, recursive=True)
-    areas = []
+    max_areas = []
     times = []
     detections = []
     jpg_files = []
+    jpg_size = []
+    box_area = []
+    box_cent = []
+    ar = []
+    data_class = []
+
     for f in files:
         name = os.path.basename(f)
         parts = name.split(delim)
+        if parts[0] == 'detect':
+            aClass = 'bird'
+        else:
+            aClass = 'negative'
+        data_class.append(aClass)
+
         aArea = float(parts[3])
-        areas.append(aArea)
+        max_areas.append(aArea)
         aTime = float(parts[1])
         times.append(aTime)
 
@@ -61,6 +96,19 @@ def create_df(dir, delim):
         if jpg is None:
             print(f"**** Could not find jpg for {f} *****")
             exit(1)
+        else:
+            # Extract more features
+            img_size, xywh = xywh_pixel(f, jpg)
+            img_size_str = str(img_size)
+            aspect_ratio = ( img_size[0] / img_size[1] )
+            bbox_areas = [x[2]* x[3] for x in xywh]
+            bbox_centroids = [(x[0], x[1]) for x in xywh]
+
+            # Set up for df
+            jpg_size.append(img_size_str)
+            ar.append(aspect_ratio)
+            box_area.append(bbox_areas)
+            box_cent.append(bbox_centroids)
 
         # Get total detections
         with open(f, "r") as aFile:
@@ -71,9 +119,14 @@ def create_df(dir, delim):
     hours_dt = [x.hour for x in time_dt]
 
     df = pd.DataFrame({
+        "class": data_class,
         "files": files,
         "jpg_files": jpg_files,
-        "areas": areas,
+        "jpg_size": jpg_size,
+        "aspect_ratio": ar,
+        "max_areas": max_areas,
+        "bbox_area": box_area,
+        "bbox_centroid": box_cent,
         "detections": detections,
         "times": time_dt,
         "hours": hours_dt
@@ -119,12 +172,12 @@ def re_order(df):
         else:
             print(f'**** Could not find {tail} *****')
 
-def yolo_format_verif(txt_file, jpg_file):
+def xywh_pixel(txt_file, jpg_file):
     img = cv.imread(jpg_file)
     width = int(img.shape[1])
     height = int(img.shape[0])
-    cv.imshow('og', img)
-    copy = img.copy()
+    img_w_h = [width, height]
+    xywh_px = []
 
     # class x_center y_center width height
     with open(txt_file, "r") as f:
@@ -136,47 +189,45 @@ def yolo_format_verif(txt_file, jpg_file):
             y_cent = float(flt_parts[1]) * height
             width_pix = float(flt_parts[2]) * width
             height_pix = float(flt_parts[3]) * height
+            px_val = [x_cent, y_cent, width_pix, height_pix]
+            xywh_px.append(px_val)
 
-            # Find corner coordinates
-            x1 = x_cent - (width_pix / 2)
-            y1 = y_cent - (height_pix / 2)
-            x2 = x_cent + (width_pix / 2)
-            y2 = y_cent + (height_pix / 2)
+    return img_w_h, xywh_px
 
-            # Draw bounding box and center point
-            cv.rectangle(copy, 
-                         (int(x1), int(y1)), 
-                         (int(x2), int(y2)), 
-                         color=(0, 255, 0), 
-                         thickness=2)
+def yolo_format_verif(txt_file, jpg_file):
+    img  = cv.imread(jpg_file)
+    copy = img.copy()
+    _, xywh = xywh_pixel(txt_file, jpg_file)
+ 
+    for coords in xywh:
 
-            cv.circle(copy, 
-                      (int(x_cent), int(y_cent)),
-                      radius=0, 
-                      color=(0, 0, 255), 
-                      thickness=2)
-            cv.imshow('copy', copy)
+        # Extract coords
+        x_cent, y_cent, width_pix, height_pix = coords
+
+        # Find corner coordinates
+        x1 = x_cent - (width_pix / 2)
+        y1 = y_cent - (height_pix / 2)
+        x2 = x_cent + (width_pix / 2)
+        y2 = y_cent + (height_pix / 2)
+
+        # Draw bounding box and center point
+        cv.rectangle(copy, 
+                (int(x1), int(y1)), 
+                (int(x2), int(y2)), 
+                color=(0, 255, 0), 
+                thickness=2)
+
+        cv.circle(copy, 
+                (int(x_cent), int(y_cent)),
+                radius=0, 
+                color=(0, 0, 255), 
+                thickness=2)
     
+    cv.imshow('copy', copy)
+    cv.imshow('og', img)
     cv.waitKey(0)
 
-def plot_df(df):
-    # Plot areas captured and detection times
-    #TODO: This is only the MAX area detected in each frame, not all bounding boxes
-    fig, axes = plt.subplots(2, 2, figsize=(10, 8))
 
-    sns.histplot(data=df, x= 'areas', ax=axes[0,0])
-    axes[0,0].set_title("Areas")
-
-    sns.scatterplot(data=df, x='hours', y='areas', ax = axes[0,1])
-    axes[0,1].set_title('Hours vs. Areas')
-
-    sns.scatterplot(data=df, x='hours', y='detections', ax = axes[1,0])
-    axes[1,0].set_title('Hour vs. Detections')
-
-    sns.histplot(data=df, x='detections', ax = axes[1,1])
-    axes[1,1].set_title('Detections')
-
-    plt.show()
 
 def train_val_test_split(df):
     ''' This will split the data based on time of observations'''
@@ -231,22 +282,22 @@ def copy_files_to_yolo_structure(file_split, output_dir):
 
 
 # Read in all the label files
-input_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\final_yolo_set"
-output_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\yolo_bird_data"
+def check():
+    input_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\final_yolo_set"
+    output_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\yolo_bird_data"
 
 
-# Verify that each label file has corresponding .jpg file
-yolo_formatted, missing_labels, missing_images = check_image_label_matches(input_dir)
-print(f"Yolo formatted: {yolo_formatted}")
-if not yolo_formatted:
-    breakpoint()
-    exit()
+    # Verify that each label file has corresponding .jpg file
+    yolo_formatted, missing_labels, missing_images = check_image_label_matches(input_dir)
+    print(f"Yolo formatted: {yolo_formatted}")
+    if not yolo_formatted:
+        breakpoint()
+        exit()
 
-# Create dataframe with detection info
-df = create_df(input_dir, delim='_')
-breakpoint()
-plot_df(df)
+    # Create dataframe with detection info
+    df = create_df(input_dir, delim='_')
+    plot_df(df)
 
-# # Test train val split for detections and negative detectoins
-file_split_1 = train_val_test_split(df)
-copy_files_to_yolo_structure(file_split_1, output_dir)
+    # # Test train val split for detections and negative detectoins
+    file_split_1 = train_val_test_split(df)
+    copy_files_to_yolo_structure(file_split_1, output_dir)
