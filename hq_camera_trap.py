@@ -34,13 +34,14 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     model_path = r'models/best_09082025.pt'
     detection_model = bird_model.BirdModel()
     detection_model.ncnn_model(model_path)
+    detection_model.ML = False
 
     while True:
         frame = picam.capture_array()
         counter = counter + 1
         if counter > 30:
             # Show the re-sized webcam images
-            orig_frame = frame
+            orig_frame = frame.copy()
             gray = cv.cvtColor(orig_frame, cv.COLOR_RGB2GRAY)
             blur = cv.GaussianBlur(gray, (5,5),0)
 
@@ -66,12 +67,17 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                 motion_blur = detector.adaptive_learning(blur)
 
                 # Filter motion found
-                detection = motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=False)
-
+                detection = motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=True)
+                if motion_filter.motion_found and motion_filter.frame_detect > 1:
+                    timestamp = int(time.time() * 1000)
+                    max_area = max(motion_filter.all_box_area)
+                    raw_file = f'raw_{timestamp}_area_{max_area}_motion_{motion_filter.downloads}.jpg'
+                    cv.imwrite(raw_file, frame)
+ 
                 # Save negative training data
                 # TODO: Instead of hidden class var, should use motion_filter return value to dictate
                 # no_motion saving
-                motion_filter.no_motion_save(delta, orig_frame)
+                #motion_filter.no_motion_save(delta, orig_frame)
 
                 # Display diffs
                 #cv.imshow('Video', orig_frame)
@@ -99,7 +105,7 @@ def main():
     )
     parser.add_argument('-c', '--cam', type=int, default=0)
     parser.add_argument('-a', '--det_area', type=int, default=55)
-    parser.add_argument('-l', '--det_cnt_limit', type=int, default=50)
+    parser.add_argument('-l', '--det_cnt_limit', type=int, default=200)
 
     # Parse arguments
     args = parser.parse_args()

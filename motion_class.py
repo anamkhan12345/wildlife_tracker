@@ -55,13 +55,13 @@ class MultipleFrameFilter:
         self.neg_counter = 0
         self.last_neg = 0
         self.debug = False 
-
         # params to reset 
         self.motion_found = False
         self.all_box_widths = []
         self.all_box_heights = []
         self.all_box_centroids = []
         self.all_box_area = []
+        self.frame_detect = 0
 
         self.small_img_dir = Path('image/test/small')
         self.med_img_dir = Path('image/test/medium')
@@ -78,6 +78,7 @@ class MultipleFrameFilter:
         self.all_box_heights = []
         self.all_box_centroids = []
         self.all_box_area = []
+        self.frame_detect = 0
 
     def filter_motion(self, motion_mask):
         # Add current frame to buffer
@@ -115,7 +116,7 @@ class MultipleFrameFilter:
         timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
         img_file = f'detect_{timestamp}_area_{max_area}_{self.downloads}.jpg'
         label_file = f'detect_{timestamp}_area_{max_area}_{self.downloads}.txt'
-
+        
         img_path = os.path.join(dir_path, img_file)
         label_path = os.path.join(dir_path, label_file)
 
@@ -171,6 +172,7 @@ class MultipleFrameFilter:
                 area = stats[i, cv.CC_STAT_AREA]
                 if area >= min_area and area < 1036800:
                     self.motion_found = True
+                    self.frame_detect = len(num_labels)
                     self.all_box_area.append(area)
                     # Draw bounding box
                     x, y, w, h = stats[i, cv.CC_STAT_LEFT:cv.CC_STAT_LEFT+4]

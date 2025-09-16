@@ -55,7 +55,6 @@ class BirdModel:
         self.detection = False
         if totalDetections > 0:
             print("detection")
-            breakpoint()
             self.detection = True
             self.downloads += 1
             labels = [detection.names[x] for x in cls.tolist()]
