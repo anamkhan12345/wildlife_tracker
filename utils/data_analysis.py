@@ -1,4 +1,4 @@
-import data_clean
+import data_gen as data_gen
 import seaborn as sns
 import matplotlib.pyplot as plt
 import cv2 as cv
@@ -9,11 +9,11 @@ def plot_set_1(df):
     # Plot areas captured and detection times
     #TODO: This is only the MAX area detected in each frame, not all bounding boxes
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-
-    sns.histplot(data=df, x= 'areas', kde=True, ax=axes[0,0])
+    breakpoint()
+    sns.histplot(data=df, x='max_areas', kde=True, ax=axes[0,0])
     axes[0,0].set_title("Areas")
 
-    sns.scatterplot(data=df, x='hours', y='areas', ax = axes[0,1])
+    sns.scatterplot(data=df, x='hours', y='max_areas', ax = axes[0,1])
     axes[0,1].set_title('Hours vs. Areas')
 
     sns.scatterplot(data=df, x='hours', y='detections', ax = axes[1,0])
@@ -393,45 +393,50 @@ def plot_distribution_analysis(df):
     plt.tight_layout()
     plt.show()
 
-input_dir = r'C:\Users\anamk\projects\wildlife_tracker\image\yolo_bird_data'
 
-# Create dataframe with detection info
-df = data_clean.create_df(input_dir, delim='_')
+def analysis():
+    input_dir = r'C:\Users\anamk\projects\wildlife_tracker\image\yolo_bird_data'
 
-# Plot info on detection area, dections, time of day
-plot_set_1(df)
+    # Create dataframe with detection info
+    df = data_gen.create_df(input_dir, delim='_')
 
-# Plot info on AR, image size and classes
-plot_set_2(df)
+    # Plot info on detection area, dections, time of day
+    plot_set_1(df)
 
-birds_only = df[df['class'] == 'bird']
-plot_coords(birds_only)
+    # Plot info on AR, image size and classes
+    plot_set_2(df)
 
-# Brightness and contrast analysis
-df_lum_set = df_lum(df['jpg_files'])
-plot_distribution_analysis(df_lum_set)
+    birds_only = df[df['class'] == 'bird']
+    plot_coords(birds_only)
 
-# Average HSV histogram for all images
-hsv_data = df['jpg_files'].apply(get_average_hsv)
-df[['avg_hue', 'avg_saturation', 'avg_value']] = pd.DataFrame(hsv_data.tolist(), index=df.index)
+    # Brightness and contrast analysis
+    df_lum_set = df_lum(df['jpg_files'])
+    plot_distribution_analysis(df_lum_set)
 
-# Calculate dataset-wide averages
-dataset_avg_h = df['avg_hue'].mean()
-dataset_avg_s = df['avg_saturation'].mean()
-dataset_avg_v = df['avg_value'].mean()
+    # Average HSV histogram for all images
+    hsv_data = df['jpg_files'].apply(get_average_hsv)
+    df[['avg_hue', 'avg_saturation', 'avg_value']] = pd.DataFrame(hsv_data.tolist(), index=df.index)
 
-print(f"Dataset Average HSV: H={dataset_avg_h:.1f}, S={dataset_avg_s:.1f}, V={dataset_avg_v:.1f}")
-# Hue (H) → the "type of color", “Is it red, blue, green, etc.?”
-# Saturation (S) → the "intensity of color", “Is it a vivid color or more washed out?”
-    # High saturation → pure, vibrant color (like neon green).
-    # Low saturation → washed-out, grayish color.
-# Value (V) → the "brightness of color", “Is it a dark color or a light color?”
-    # High value → bright (close to white).
-    # Low value → dark (close to black).
+    # Calculate dataset-wide averages
+    dataset_avg_h = df['avg_hue'].mean()
+    dataset_avg_s = df['avg_saturation'].mean()
+    dataset_avg_v = df['avg_value'].mean()
 
-plot_hsv_analysis(df)
+    print(f"Dataset Average HSV: H={dataset_avg_h:.1f}, S={dataset_avg_s:.1f}, V={dataset_avg_v:.1f}")
+    # Hue (H) → the "type of color", “Is it red, blue, green, etc.?”
+    # Saturation (S) → the "intensity of color", “Is it a vivid color or more washed out?”
+        # High saturation → pure, vibrant color (like neon green).
+        # Low saturation → washed-out, grayish color.
+    # Value (V) → the "brightness of color", “Is it a dark color or a light color?”
+        # High value → bright (close to white).
+        # Low value → dark (close to black).
 
-# Filter for single detections AND any area < 100
-filtered_df = df[(df['detections'] == 1) & 
-                 (df['bbox_area'].apply(lambda x: any(area < 300 and area > 250 for area in x)))]
-breakpoint()
+    plot_hsv_analysis(df)
+
+    # Filter for single detections AND any area < 100
+    filtered_df = df[(df['detections'] == 1) & 
+                    (df['bbox_area'].apply(lambda x: any(area < 300 and area > 250 for area in x)))]
+
+
+if __name__ == "__main__":
+    analysis()
