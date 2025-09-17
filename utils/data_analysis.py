@@ -10,7 +10,7 @@ def plot_set_1(df):
     #TODO: This is only the MAX area detected in each frame, not all bounding boxes
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
 
-    sns.histplot(data=df, x= 'areas', ax=axes[0,0])
+    sns.histplot(data=df, x= 'areas', kde=True, ax=axes[0,0])
     axes[0,0].set_title("Areas")
 
     sns.scatterplot(data=df, x='hours', y='areas', ax = axes[0,1])
@@ -19,15 +19,13 @@ def plot_set_1(df):
     sns.scatterplot(data=df, x='hours', y='detections', ax = axes[1,0])
     axes[1,0].set_title('Hour vs. Detections')
 
-    sns.histplot(data=df, x='detections', ax = axes[1,1])
+    sns.histplot(data=df, x='detections', kde=True, ax = axes[1,1])
     axes[1,1].set_title('Detections')
 
     plt.show()
 
 def plot_set_2(df):
-    # Plot centroid locations
     fig, axes = plt.subplots(2, 3, figsize=(10, 8))
-
 
     # Plot all areas
     all_areas = [area for area_list in df['bbox_area'] for area in area_list ]
@@ -50,7 +48,7 @@ def plot_set_2(df):
 
 def plot_coords(df):
     # Plot centroid locations
-    fig, axes = plt.subplots(1, 3, figsize=(10, 8))
+    fig, axes = plt.subplots(1, 2, figsize=(10, 8))
 
     # Flatten all tuples from all rows
     all_tuples = [tuple for tuple_list in df['bbox_centroid'] for tuple in tuple_list]
@@ -66,22 +64,24 @@ def plot_coords(df):
     axes[0].invert_yaxis()  # Invert y-axis to match image coordinate system
 
     # Plot top left x1,y1 coordinates
-    all_x1 = [x[0] for x in df['x_1'] for _ in range(len(df['x_1']))]
-    all_y1 = [y[0] for y in df['y_1'] for _ in range(len(df['y_1']))]
-    sns.scatterplot(x=all_x1, y=all_y1, ax=axes[1], color='orange')
-    axes[1].set_xlabel('X1 (top-left)')
-    axes[1].set_ylabel('Y1 (top-left)')
-    axes[1].set_title("Top-Left Corners")
+    all_x1 = [x for x_list in df['bbox_x1'] for x in x_list]
+    all_y1 = [y for y_list in df['bbox_y1'] for y in y_list]
+    top_left = pd.DataFrame({'x': all_x1, 'y': all_y1, 'label': 'top-left'})
+
+    # Plot bottom right x2,y2 coordinates
+    all_x2 = [x for x_list in df['bbox_x2'] for x in x_list]
+    all_y2 = [y for y_list in df['bbox_y2'] for y in y_list]
+    bottom_right = pd.DataFrame({'x': all_x2, 'y': all_y2, 'label': 'bottom-right'})
+    combined = pd.concat([top_left, bottom_right], ignore_index=True)
+    
+    sns.scatterplot(data=combined, x='x', y='y', hue='label', ax=axes[1])
+    axes[1].set_xlabel('X')
+    axes[1].set_ylabel('Y')
+    axes[1].set_title("Bounding Box Corners")
+    plt.ylim(0, 1080)
+    plt.xlim(0, 1920)
     axes[1].invert_yaxis()  # Invert y-axis to match image coordinate system
 
-    # Plot top left x2,y2 coordinates
-    all_x2 = [x[1] for x in df['x_2'] for _ in range(len(df['x_2']))]
-    all_y2 = [y[1] for y in df['y_2'] for _ in range(len(df['y_2']))]
-    sns.scatterplot(x=all_x2, y=all_y2, ax=axes[2], color='green')
-    axes[2].set_xlabel('X2 (bottom-right)')
-    axes[2].set_ylabel('Y2 (bottom-right)')
-    axes[2].set_title("Bottom-Right Corners")
-    axes[2].invert_yaxis()  # Invert y-axis to match image coordinate system
 
     plt.show()
 
@@ -207,18 +207,210 @@ def plot_hsv_analysis(df):
     plt.tight_layout()
     plt.show()
 
+def df_lum(files):
+
+    dict_list = []
+    for file in files:
+        img = cv.imread(str(file))
+        if img is None:
+            return None
+            
+        gray = cv.cvtColor(img, cv.COLOR_RGB2GRAY)
+        
+        # Basic statistics
+        mean_brightness = np.mean(gray)
+        std_brightness = np.std(gray)
+        min_val = np.min(gray)
+        max_val = np.max(gray)
+        
+        # Percentiles for exposure analysis
+        p1 = np.percentile(gray, 1)
+        p5 = np.percentile(gray, 5)
+        p25 = np.percentile(gray, 25)
+        p50 = np.percentile(gray, 50)  # median
+        p75 = np.percentile(gray, 75)
+        p95 = np.percentile(gray, 95)
+        p99 = np.percentile(gray, 99)
+        
+        # Contrast metrics
+        # RMS contrast (standard deviation)
+        rms_contrast = std_brightness
+        
+        # Michelson contrast (for images with distinct light/dark regions)
+        michelson_contrast = (max_val - min_val) / (max_val + min_val) if (max_val + min_val) > 0 else 0
+        
+        # Weber contrast (relative to background)
+        weber_contrast = std_brightness / mean_brightness if mean_brightness > 0 else 0
+        
+        # Histogram analysis
+        hist = cv.calcHist([gray], [0], None, [256], [0, 256]).flatten()
+        
+        # Exposure indicators
+        underexposed_pixels = np.sum(gray < 30) / gray.size  # Percentage of very dark pixels
+        overexposed_pixels = np.sum(gray > 225) / gray.size  # Percentage of very bright pixels
+        clipped_shadows = np.sum(gray == 0) / gray.size  # Pure black pixels
+        clipped_highlights = np.sum(gray == 255) / gray.size  # Pure white pixels
+        
+        # Dynamic range
+        dynamic_range = p99 - p1
+        
+        # Histogram spread metrics
+        histogram_entropy = -np.sum((hist/np.sum(hist)) * np.log2((hist/np.sum(hist)) + 1e-10))
+        
+        # Low-key vs high-key detection
+        low_key_ratio = np.sum(gray < 85) / gray.size  # Dark image indicator
+        high_key_ratio = np.sum(gray > 170) / gray.size  # Bright image indicator
+
+        # Check for underexposure
+        issues = []
+        thresholds = {
+            'very_dark': 50,        # Mean brightness threshold for very dark images
+            'very_bright': 200,     # Mean brightness threshold for very bright images
+            'low_contrast': 30,     # RMS contrast threshold for low contrast
+            'high_overexposure': 0.05,  # 5% overexposed pixels
+            'high_underexposure': 0.05,  # 5% underexposed pixels
+            'clipping_threshold': 0.01    # 1% clipped pixels
+        }
+
+        if mean_brightness < thresholds['very_dark']:
+            issues.append('very_dark')
+        if underexposed_pixels > thresholds['high_underexposure']:
+            issues.append('underexposed')
+        if clipped_shadows > thresholds['clipping_threshold']:
+            issues.append('shadow_clipping')
+
+        # Check for overexposure
+        if mean_brightness > thresholds['very_bright']:
+            issues.append('very_bright')
+        if overexposed_pixels > thresholds['high_overexposure']:
+            issues.append('overexposed')
+        if clipped_highlights > thresholds['clipping_threshold']:
+            issues.append('highlight_clipping')
+        
+        # Check for low contrast
+        if rms_contrast < thresholds['low_contrast']:
+            issues.append('low_contrast')
+        
+        # Check for extreme lighting bias
+        if low_key_ratio > 0.8:
+            issues.append('extreme_low_key')
+        if high_key_ratio > 0.8:
+            issues.append('extreme_high_key')
+
+        bright_contr_dict = {
+                'filename': file,
+                'issues': issues,
+                'mean_brightness': mean_brightness,
+                'std_brightness': std_brightness,
+                'min_luminance': min_val,
+                'max_luminance': max_val,
+                'median_brightness': p50,
+                'p1': p1,
+                'p5': p5,
+                'p25': p25,
+                'p75': p75,
+                'p95': p95,
+                'p99': p99,
+                'rms_contrast': rms_contrast,
+                'michelson_contrast': michelson_contrast,
+                'weber_contrast': weber_contrast,
+                'dynamic_range': dynamic_range,
+                'histogram_entropy': histogram_entropy,
+                'underexposed_ratio': underexposed_pixels,
+                'overexposed_ratio': overexposed_pixels,
+                'clipped_shadows': clipped_shadows,
+                'clipped_highlights': clipped_highlights,
+                'low_key_ratio': low_key_ratio,
+                'high_key_ratio': high_key_ratio
+            }
+
+        dict_list.append(bright_contr_dict)
+
+    return pd.DataFrame(dict_list)
+
+def plot_distribution_analysis(df):
+    """Create visualization plots for the analysis with KDE overlays."""
+    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+    
+    # Brightness distribution
+    axes[0, 0].hist(df['mean_brightness'], bins=50, alpha=0.5, color='skyblue', density=True, label='Histogram')
+    sns.kdeplot(data=df, x='mean_brightness', ax=axes[0, 0], color='darkblue', linewidth=2, label='KDE')
+    axes[0, 0].axvline(df['mean_brightness'].mean(), color='red', linestyle='--', label=f'Mean ({df["mean_brightness"].mean():.1f})')
+    axes[0, 0].axvline(df['mean_brightness'].median(), color='orange', linestyle=':', label=f'Median ({df["mean_brightness"].median():.1f})')
+    axes[0, 0].set_title('Brightness Distribution')
+    axes[0, 0].set_xlabel('Mean Brightness')
+    axes[0, 0].set_ylabel('Density')
+    axes[0, 0].legend()
+    
+    # Contrast distribution
+    axes[0, 1].hist(df['rms_contrast'], bins=50, alpha=0.5, color='lightgreen', density=True, label='Histogram')
+    sns.kdeplot(data=df, x='rms_contrast', ax=axes[0, 1], color='darkgreen', linewidth=2, label='KDE')
+    axes[0, 1].axvline(df['rms_contrast'].mean(), color='red', linestyle='--', label=f'Mean ({df["rms_contrast"].mean():.1f})')
+    axes[0, 1].axvline(df['rms_contrast'].median(), color='orange', linestyle=':', label=f'Median ({df["rms_contrast"].median():.1f})')
+    axes[0, 1].set_title('Contrast Distribution (RMS)')
+    axes[0, 1].set_xlabel('RMS Contrast')
+    axes[0, 1].set_ylabel('Density')
+    axes[0, 1].legend()
+    
+    # Dynamic range
+    axes[0, 2].hist(df['dynamic_range'], bins=50, alpha=0.5, color='orange', density=True, label='Histogram')
+    sns.kdeplot(data=df, x='dynamic_range', ax=axes[0, 2], color='darkorange', linewidth=2, label='KDE')
+    axes[0, 2].axvline(df['dynamic_range'].mean(), color='red', linestyle='--', label=f'Mean ({df["dynamic_range"].mean():.1f})')
+    axes[0, 2].axvline(df['dynamic_range'].median(), color='blue', linestyle=':', label=f'Median ({df["dynamic_range"].median():.1f})')
+    axes[0, 2].set_title('Dynamic Range Distribution')
+    axes[0, 2].set_xlabel('Dynamic Range (P99-P1)')
+    axes[0, 2].set_ylabel('Density')
+    axes[0, 2].legend()
+    
+    # Exposure problems
+    axes[1, 0].scatter(df['overexposed_ratio'], df['underexposed_ratio'], alpha=0.6, color='coral')
+    axes[1, 0].set_xlabel('Overexposed Ratio')
+    axes[1, 0].set_ylabel('Underexposed Ratio')
+    axes[1, 0].set_title('Exposure Problems')
+    # Add quadrant lines to help interpretation
+    axes[1, 0].axhline(0.05, color='red', linestyle=':', alpha=0.5, label='5% threshold')
+    axes[1, 0].axvline(0.05, color='red', linestyle=':', alpha=0.5)
+    axes[1, 0].legend()
+    
+    # Brightness vs Contrast with density
+    scatter = axes[1, 1].scatter(df['mean_brightness'], df['rms_contrast'], alpha=0.6, c=df['dynamic_range'], 
+                                cmap='viridis', s=30)
+    axes[1, 1].set_xlabel('Mean Brightness')
+    axes[1, 1].set_ylabel('RMS Contrast')
+    axes[1, 1].set_title('Brightness vs Contrast (colored by Dynamic Range)')
+    plt.colorbar(scatter, ax=axes[1, 1], label='Dynamic Range')
+    
+    # Histogram entropy
+    axes[1, 2].hist(df['histogram_entropy'], bins=50, alpha=0.5, color='purple', density=True, label='Histogram')
+    sns.kdeplot(data=df, x='histogram_entropy', ax=axes[1, 2], color='darkviolet', linewidth=2, label='KDE')
+    axes[1, 2].axvline(df['histogram_entropy'].mean(), color='red', linestyle='--', label=f'Mean ({df["histogram_entropy"].mean():.1f})')
+    axes[1, 2].axvline(df['histogram_entropy'].median(), color='orange', linestyle=':', label=f'Median ({df["histogram_entropy"].median():.1f})')
+    axes[1, 2].set_title('Histogram Entropy Distribution')
+    axes[1, 2].set_xlabel('Entropy')
+    axes[1, 2].set_ylabel('Density')
+    axes[1, 2].legend()
+    
+    plt.tight_layout()
+    plt.show()
+
 input_dir = r'C:\Users\anamk\projects\wildlife_tracker\image\yolo_bird_data'
 
 # Create dataframe with detection info
 df = data_clean.create_df(input_dir, delim='_')
-plot_coords(df)
-breakpoint()
+
+# Plot info on detection area, dections, time of day
+plot_set_1(df)
+
+# Plot info on AR, image size and classes
 plot_set_2(df)
 
-# Filter for single detections AND any area < 100
-filtered_df = df[(df['detections'] == 1) & 
-                 (df['bbox_area'].apply(lambda x: any(area < 300 and area > 250 for area in x)))]
-breakpoint()
+birds_only = df[df['class'] == 'bird']
+plot_coords(birds_only)
+
+# Brightness and contrast analysis
+df_lum_set = df_lum(df['jpg_files'])
+plot_distribution_analysis(df_lum_set)
+
 # Average HSV histogram for all images
 hsv_data = df['jpg_files'].apply(get_average_hsv)
 df[['avg_hue', 'avg_saturation', 'avg_value']] = pd.DataFrame(hsv_data.tolist(), index=df.index)
@@ -238,3 +430,8 @@ print(f"Dataset Average HSV: H={dataset_avg_h:.1f}, S={dataset_avg_s:.1f}, V={da
     # Low value → dark (close to black).
 
 plot_hsv_analysis(df)
+
+# Filter for single detections AND any area < 100
+filtered_df = df[(df['detections'] == 1) & 
+                 (df['bbox_area'].apply(lambda x: any(area < 300 and area > 250 for area in x)))]
+breakpoint()

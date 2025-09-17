@@ -322,7 +322,6 @@ def check():
 
     # Create dataframe with detection info
     df = create_df(input_dir, delim='_')
-    plot_df(df)
 
     # # Test train val split for detections and negative detectoins
     file_split_1 = train_val_test_split(df)
