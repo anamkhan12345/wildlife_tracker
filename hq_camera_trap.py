@@ -3,8 +3,18 @@ import cv2 as cv
 import motion_class
 import bird_model
 import argparse
-import time
+import datetime
 
+def is_daytime(start_hour=6, start_minute=30, end_hour=19, end_minute=30):
+    """Check if current time is within daytime hours"""
+    now = datetime.datetime.now()
+    current_time = now.time()
+    
+    # Create time objects for comparison
+    start_time = datetime.time(start_hour, start_minute)
+    end_time = datetime.time(end_hour, end_minute)
+    
+    return start_time <= current_time <= end_time
 
 def hq_cam_trap(cam_id, detection_area, detection_limit):
     # Setup HQ Camera
@@ -25,7 +35,6 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     motion_filter = motion_class.MultipleFrameFilter(buffer_size=5, threshold=0.6)
     motion_filter.debug = False 
     counter = 0
-
 
     # No motion saves
     delta = 180 # seconds, 5 mins
@@ -56,6 +65,11 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     while True:
         frame = picam.capture_array()
         counter = counter + 1
+
+        if not is_daytime():
+            print(f"Outside daytime hours, skipping frame at {datetime.datetime.now().strftime('%H:%M:%S')}")
+            continue  # This jumps back to the top of the while loop
+
         if counter > 30:
             # Show the re-sized webcam images
             orig_frame = frame.copy()
