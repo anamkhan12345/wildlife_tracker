@@ -119,7 +119,7 @@ class MultipleFrameFilter:
         # Save frame image
         timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
         img_file = f'detect_{timestamp}_area_{max_area}_{self.downloads}.jpg'
-        raw_file = f'raw_{timestamp}_area_{max_area}_motion_{self.downloads}.jpg'
+        raw_file = f'detectRaw_{timestamp}_area_{max_area}_motion_{self.downloads}.jpg'
         label_file = f'detect_{timestamp}_area_{max_area}_{self.downloads}.txt'
         
         img_path = os.path.join(dir_path, img_file)
@@ -215,7 +215,7 @@ class MultipleFrameFilter:
                 self.single_ctr = self.single_ctr + 1
             elif self.total_frm_detections > 1 and self.total_frm_detections < 4:
                 self.detection_category = "mltpl"
-                self.mltp_ctr = self.mltp_ctr + 1
+                self.mltp_ctr = self.mltpl_ctr + 1
             elif self.total_frm_detections >= 4:
                 self.detection_category = "dense"
                 self.dense_ctr = self.dense_ctr + 1
