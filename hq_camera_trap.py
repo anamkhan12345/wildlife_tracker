@@ -50,7 +50,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     med_limit = int(detection_limit * 0.45)
     big_limit = int(detection_limit * 0.25)
 
-    single_limit = int(detection_limit * .45)
+    single_limit = int(detection_limit * .6)
     mltp_limit = int(detection_limit * .4)
     print(f"Small limit: {small_limit}, Med limit: {med_limit}, Big limit: {big_limit}, Single limit: {single_limit}, MLTp limit: {mltp_limit}")
 
@@ -137,7 +137,8 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                 if should_save:
                     motion_filter.yolo_annotation(det_frame, True)
                     print('***************************')
-                    print(f"Dominant Detection Size: {dominant_detection}")
+                    print(f"Dominant Detecte_ctr + small_multi_ctr} / {small_limit}')
+Too much motion detected: 1758201142301                                                                               │144                     print(f'Med Detections: {motion_filter.meion Size: {dominant_detection}")
                     print(f"Count Category: {count_category}")
                     print(f'Small Detections: {motion_filter.small_ctr} / {small_limit}')
                     print(f'Small Detections: {small_single_ctr + small_multi_ctr} / {small_limit}')
@@ -145,7 +146,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                     print(f'Big Detections: {motion_filter.big_ctr} / {big_limit}')
                     print("-")
                     print(f'Single Detections: {motion_filter.single_ctr} / {single_limit}')
-                    print(f'Mltpl Detections: {motion_filter.mltpl_ctr} / {single_limit}')
+                    print(f'Mltpl Detections: {motion_filter.mltpl_ctr} / {mltp_limit}')
 
                 # Save negative training data
                 # TODO: Instead of hidden class var, should use motion_filter return value to dictate
