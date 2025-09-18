@@ -101,7 +101,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
                 # Data collection scheduling
                 count_category = motion_filter.detection_category
-                dominant_detection = motion_filter.dominant_detection_size()
+                dominant_detection = motion_filter.dominant_detection_size(small_limit, med_limit, big_limit)
                 should_save = False
 
                 if count_category == "single":
@@ -137,7 +137,6 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                         should_save = True
 
                 if should_save:
-                    breakpoint()
                     motion_filter.yolo_annotation(det_frame, True)
                     print('***************************')
                     print(f"Dominant Detection Size: {dominant_detection}")
