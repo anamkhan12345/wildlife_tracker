@@ -49,15 +49,16 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     small_limit = int(detection_limit * 0.3)
     med_limit = int(detection_limit * 0.45)
     big_limit = int(detection_limit * 0.25)
+
     single_limit = int(detection_limit * .45)
     mltp_limit = int(detection_limit * .4)
-    dense_limit = int(detection_limit * .15)
-    print(f"Small limit: {small_limit}, Med limit: {med_limit}, Big limit: {big_limit}, Single limit: {single_limit}, MLTp limit: {mltp_limit}, Dense limit: {dense_limit}")
+    print(f"Small limit: {small_limit}, Med limit: {med_limit}, Big limit: {big_limit}, Single limit: {single_limit}, MLTp limit: {mltp_limit}")
 
     # Counters for combined categories (add these)
     small_single_ctr = 0
     small_multi_ctr = 0
     med_single_ctr = 0
+
     med_multi_ctr = 0
     big_single_ctr = 0
     big_multi_ctr = 0
@@ -105,36 +106,33 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                 should_save = False
 
                 if count_category == "single" and (motion_filter.single_ctr < single_limit):
-                    if dominant_detection == "small" and small_single_ctr < int((small_limit * 0.6)):  # 60% of small should be single
+                    if dominant_detection == "small" and small_single_ctr < int((single_limit * 0.3)):  # 60% of small should be single
                         should_save = True
                         small_single_ctr += 1
                         print(f'small single ctr: {small_single_ctr} / {small_limit}')
-                    elif dominant_detection == "med" and med_single_ctr < int((med_limit * 0.7)):  # 70% of med should be single
+                    elif dominant_detection == "med" and med_single_ctr < int((single_limit * 0.45)):  # 70% of med should be single
                         should_save = True
                         med_single_ctr += 1
                         print(f'med single ctr: {med_single_ctr} / {med_limit}')
-                    elif dominant_detection == "big" and big_single_ctr < int((big_limit * 0.8)):  # 80% of big should be single
+                    elif dominant_detection == "big" and big_single_ctr < int((single_limit * 0.25)):  # 80% of big should be single
                         should_save = True
                         big_single_ctr += 1
                         print(f'big single ctr: {big_single_ctr} / {big_limit}')
 
                 elif count_category == "multi" and (motion_filter.mltp_ctr < mltp_limit):
-                    if dominant_detection == "small" and small_multi_ctr < (small_limit * 0.4):
+                    if dominant_detection == "small" and small_multi_ctr < (mltp_limit * 0.3):
                         should_save = True
                         small_multi_ctr += 1
                         print(f'small multi ctr: {small_multi_ctr} / {small_limit}')
-                    elif dominant_detection == "med" and med_multi_ctr < (med_limit * 0.3):
+                    elif dominant_detection == "med" and med_multi_ctr < (mltp_limit * 0.45):
                         should_save = True
                         med_multi_ctr += 1
                         print(f'med multi ctr: {med_multi_ctr} / {med_limit}')
-                    elif dominant_detection == "big" and big_multi_ctr < (big_limit * 0.2):
+                    elif dominant_detection == "big" and big_multi_ctr < (mltp_limit * 0.25):
                         should_save = True
                         big_multi_ctr += 1
                         print(f'big multi ctr: {big_multi_ctr} / {big_limit}')
-                elif count_category == "dense":
-                    # Dense scenes are valuable regardless of size, but cap them
-                    if motion_filter.dense_ctr < dense_limit:
-                        should_save = True
+
 
                 if should_save:
                     motion_filter.yolo_annotation(det_frame, True)
@@ -148,7 +146,6 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                     print("-")
                     print(f'Single Detections: {motion_filter.single_ctr} / {single_limit}')
                     print(f'Mltpl Detections: {motion_filter.mltpl_ctr} / {single_limit}')
-                    print(f'Dense Detections: {motion_filter.dense_ctr} / {single_limit}')
 
                 # Save negative training data
                 # TODO: Instead of hidden class var, should use motion_filter return value to dictate

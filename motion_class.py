@@ -213,12 +213,10 @@ class MultipleFrameFilter:
             if self.total_frm_detections == 1:
                 self.detection_category = "single"
                 self.single_ctr = self.single_ctr + 1
-            elif self.total_frm_detections > 1 and self.total_frm_detections < 4:
+            elif self.total_frm_detections > 1:
                 self.detection_category = "mltpl"
                 self.mltp_ctr = self.mltpl_ctr + 1
-            elif self.total_frm_detections >= 4:
-                self.detection_category = "dense"
-                self.dense_ctr = self.dense_ctr + 1
+
 
         else:
             print(f"Too much motion detected: {timestamp}")
