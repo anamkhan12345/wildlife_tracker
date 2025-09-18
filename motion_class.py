@@ -54,15 +54,31 @@ class MultipleFrameFilter:
         self.downloads = 0
         self.neg_counter = 0
         self.last_neg = 0
-        self.debug = False 
-        # params to reset 
+        self.debug = False
+        self.small_ctr = 0
+        self.med_ctr = 0
+        self.big_ctr = 0
+        self.single_ctr = 0
+        self.mltpl_ctr = 0
+        self.dense_ctr = 0
+
+        ### Params to reset ###
         self.motion_found = False
         self.all_box_widths = []
         self.all_box_heights = []
         self.all_box_centroids = []
         self.all_box_area = []
-        self.frame_detect = 0
+        # Detections per frame stats
+        self.total_frm_detections = 0
+        self.area_size = []
+        self.detection_category = []
 
+
+        # Create dirs
+        self.create_dirs()
+
+    def create_dirs(self):
+        # Paths to save images
         self.small_img_dir = Path('image/test/small')
         self.med_img_dir = Path('image/test/medium')
         self.big_img_dir = Path('image/test/big')
@@ -78,7 +94,10 @@ class MultipleFrameFilter:
         self.all_box_heights = []
         self.all_box_centroids = []
         self.all_box_area = []
-        self.frame_detect = 0
+        self.total_frm_detections = 0
+        self.area_size = []
+        self.detection_category = []
+
 
     def filter_motion(self, motion_mask):
         # Add current frame to buffer
@@ -95,21 +114,6 @@ class MultipleFrameFilter:
         
         return (persistent_motion * 255).astype(np.uint8)
 
-
-    # def intensity_filter(self, original_frame, label, stats, brt_thresh=200):
-    #     if len(original_frame) == 3:
-    #         gray = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
-    #     else:
-    #         original_frame
-    #     valid_detects = []
-        
-    #     for i in range(1, num_labels):
-    #         possible_det = (labels == i)
-    #         avg_brightness = np.mean(gray[component_mask])
-    #     if avg_brightness <  brt_thresh:
-    #         valid_detects.append(i) 
-
-    #     return valid_components
 
     def save_data(self, max_area, yolo_format, dir_path, bbox_frame, og_frame):
         # Save frame image
@@ -150,34 +154,35 @@ class MultipleFrameFilter:
                            'width': yolo_width,
                            'height': yolo_height}
             if save_data:
-                if max_area < 50:
+                if max_area > 50 and max_area < 500:
                     self.save_data(max_area, yolo_format, self.small_img_dir, frame, og_frame)
-                elif max_area >= 50 and max_area < 500:
+                elif max_area >= 500 and max_area < 2000:
                     self.save_data(max_area, yolo_format, self.med_img_dir, frame, og_frame)
-                else:
+                elif max_area >= 2000:
                     self.save_data(max_area, yolo_format, self.big_img_dir, frame, og_frame)
 
-    def motion_filter(self, persistent_motion, original_frame, min_area, save_data=True):
+    def motion_filter(self, persistent_motion, original_frame, min_area):
 
         # Reset class vars
         self.reset_vars()
+
         # Find connected components
         num_labels, labels, stats, centroids = cv.connectedComponentsWithStats(
             persistent_motion, connectivity=8
         )
-	# TODO: Filter out clouds based on intensity
-        #valid_detects = intensity_filter(gray_frame, label, stats, brt_thresh=200)
 
-        timestamp = int(time.time() * 1000) 
+	    # TODO: Filter out clouds based on intensity
+        timestamp = int(time.time() * 1000)
+
         # Skip background label (0)
-        if (num_labels < 6 and num_labels > 1) or self.debug:
+        if num_labels < 7 or self.debug:
+            
             # Loop through all groups and draw bounding box
             for i in range(1, num_labels):
                 area = stats[i, cv.CC_STAT_AREA]
                 if area >= min_area and area < 1036800:
+                    self.total_frm_detections += 1
                     self.motion_found = True
-                    self.frame_detect = len(num_labels)
-                    self.all_box_area.append(area)
                     # Draw bounding box
                     x, y, w, h = stats[i, cv.CC_STAT_LEFT:cv.CC_STAT_LEFT+4]
                     bttm_x = x + w
@@ -191,12 +196,46 @@ class MultipleFrameFilter:
                     self.all_box_centroids.append(centroid)
                     self.all_box_widths.append(w)
                     self.all_box_heights.append(h)
-                    # Generate YOLO formatting docs
-                    self.yolo_annotation(original_frame, save_data)
+                    # Bbox area 
+                    bbox_area = w * h
+                    self.all_box_area.append(bbox_area)
+
+                    if bbox_area > 50 and bbox_area < 500:
+                        self.area_size.append("small")
+                        self.small_ctr = self.small_ctr + 1
+                    elif bbox_area >= 500 and bbox_area < 2000:
+                        self.area_size.append("medium")
+                        self.med_ctr = self.med_ctr + 1
+                    elif bbox_area >= 2000:
+                        self.area_size.append("big")
+                        self.big_ctr = self.big_ctr + 1
+
+            if self.total_frm_detections == 1:
+                self.detection_category = "single"
+                self.single_ctr = self.single_ctr + 1
+            elif self.total_frm_detections > 1 and self.total_frm_detections < 4:
+                self.detection_category = "mltpl"
+                self.mltp_ctr = self.mltp_ctr + 1
+            elif self.total_frm_detections >= 4:
+                self.detection_category = "dense"
+                self.dense_ctr = self.dense_ctr + 1
+
         else:
             print(f"Too much motion detected: {timestamp}")
 
-        return num_labels - 1  # Return number of motion groups found
+        return original_frame
+
+
+    def prioritize_data_collect(self):
+        if not self.motion_found:
+            return None
+
+        if self.small_ctr >= self.med_ctr and self.small_ctr >= self.big_ctr:
+            return "small"
+        elif self.med_ctr >= self.big_ctr:
+            return "medium"
+        else:
+            return "big"
 
 
     def no_motion_save(self, delta, frame):
@@ -218,6 +257,7 @@ class MultipleFrameFilter:
             # Create empty text file to go with image
             self.last_neg = current_time
             print(f"saved random image: {self.neg_counter}")
+    
 
 
 def add_grid(image, rows=3, cols=3, color=(255, 255, 255), thickness=2, alpha=0.8):

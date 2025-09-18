@@ -36,6 +36,23 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     detection_model.ncnn_model(model_path)
     detection_model.ML = False
 
+    # Figure out data capture limits
+    small_limit = int(detection_limit * 0.3)
+    med_limit = int(detection_limit * 0.45)
+    big_limit = int(detection_limit * 0.25)
+    single_limit = int(detection_limit * .45)
+    mltp_limit = int(detection_limit * .4)
+    dense_limit = int(detection_limit * .15)
+    print(f"Small limit: {small_limit}, Med limit: {med_limit}, Big limit: {big_limit}, Single limit: {single_limit}, MLTp limit: {mltp_limit}, Dense limit: {dense_limit}")
+
+    # Counters for combined categories (add these)
+    small_single_ctr = 0
+    small_multi_ctr = 0
+    med_single_ctr = 0
+    med_multi_ctr = 0
+    big_single_ctr = 0
+    big_multi_ctr = 0
+
     while True:
         frame = picam.capture_array()
         counter = counter + 1
@@ -66,12 +83,56 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                 motion = detector.adaptive_learning(gray)
 
                 # Filter motion found
-                motion_filter.motion_filter(motion, orig_frame, detection_area, save_data=True)
+                det_frame = motion_filter.motion_filter(motion, orig_frame, detection_area)
+
+                # Data collection scheduling
+                count_category = motion_filter.detection_category
+                priority = motion_filter.prioritize_data_collect()
+                should_save = False
+
+                if count_category == "single":
+                    if priority == "small" and small_single_ctr < int((small_limit * 0.6)):  # 60% of small should be single
+                        should_save = True
+                        small_single_ctr += 1
+                    elif priority == "med" and med_single_ctr < int((med_limit * 0.7)):  # 70% of med should be single
+                        should_save = True
+                        med_single_ctr += 1
+                    elif priority == "big" and big_single_ctr < int((big_limit * 0.8)):  # 80% of big should be single
+                        should_save = True
+                        big_single_ctr += 1
+
+                elif count_category == "multi":
+                    if priority == "small" and small_multi_ctr < (small_limit * 0.4):
+                        should_save = True
+                        small_multi_ctr += 1
+                    elif priority == "med" and med_multi_ctr < (med_limit * 0.3):
+                        should_save = True
+                        med_multi_ctr += 1
+                    elif priority == "big" and big_multi_ctr < (big_limit * 0.2):
+                        should_save = True
+                        big_multi_ctr += 1
+
+                elif count_category == "dense":
+                    # Dense scenes are valuable regardless of size, but cap them
+                    if dense_ctr < dense_limit:
+                        should_save = True
+                        dense_ctr += 1
+
+                if should_save:
+                    motion_filter.yolo_annotation(det_frame, True)
+                    print('***************************')
+                    print(f'Small Detections: {motion_filter.small_ctr} / {small_limit}')
+                    print(f'Med Detections: {motion_filter.med_ctr} / {med_limit}')
+                    print(f'Big Detections: {motion_filter.big_ctr} / {big_limit}')
+                    print("-")
+                    print(f'Single Detections: {motion_filter.single_ctr} / {single_limit}')
+                    print(f'Mltpl Detections: {motion_filter.mltpl_ctr} / {single_limit}')
+                    print(f'Dense Detections: {motion_filter.dense_ctr} / {single_limit}')
 
                 # Save negative training data
                 # TODO: Instead of hidden class var, should use motion_filter return value to dictate
                 # no_motion saving
-                #motion_filter.no_motion_save(delta, orig_frame)
+                motion_filter.no_motion_save(delta, orig_frame)
 
                 # Display diffs
                 #cv.imshow('Video', orig_frame)
