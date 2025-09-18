@@ -244,7 +244,7 @@ class MultipleFrameFilter:
         need_small = small > 0 and not exceed_small
         need_med = med > 0 and not exceed_med
         need_big = big > 0 and not exceed_big
-
+        breakpoint()
         if need_small:
             return "small"
         elif need_med:

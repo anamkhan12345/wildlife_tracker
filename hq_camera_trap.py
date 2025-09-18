@@ -104,7 +104,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                 dominant_detection = motion_filter.dominant_detection_size(small_limit, med_limit, big_limit)
                 should_save = False
 
-                if count_category == "single":
+                if count_category == "single" and (motion_filter.single_ctr < single_limit):
                     if dominant_detection == "small" and small_single_ctr < int((small_limit * 0.6)):  # 60% of small should be single
                         should_save = True
                         small_single_ctr += 1
@@ -118,7 +118,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                         big_single_ctr += 1
                         print(f'big single ctr: {big_single_ctr} / {big_limit}')
 
-                elif count_category == "multi":
+                elif count_category == "multi" and (motion_filter.mltp_ctr < mltp_limit):
                     if dominant_detection == "small" and small_multi_ctr < (small_limit * 0.4):
                         should_save = True
                         small_multi_ctr += 1
