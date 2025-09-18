@@ -101,7 +101,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
                 # Data collection scheduling
                 count_category = motion_filter.detection_category
-                priority = motion_filter.prioritize_data_collect()
+                priority = motion_filter.dominant_detection_size()
                 should_save = False
                 print(f'Priority: {priority}')
 

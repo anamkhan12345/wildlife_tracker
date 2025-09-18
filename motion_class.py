@@ -3,7 +3,7 @@ import numpy as np
 import os
 from pathlib import Path
 import time
-from collections import deque
+from collections import deque, Counter
 from datetime import datetime
 
 
@@ -226,16 +226,25 @@ class MultipleFrameFilter:
         return original_frame
 
 
-    def prioritize_data_collect(self):
+    def dominant_detection_size(self):
         if not self.motion_found:
             return None
+        
+        sizes = self.area_size
+        counts = Counter(sizes)
 
-        if self.small_ctr >= self.med_ctr and self.small_ctr >= self.big_ctr:
+        small = counts["small"]
+        medium = counts["medium"]
+        big = counts["big"]
+
+        if small >= medium and small >= big:
             return "small"
-        elif self.med_ctr >= self.big_ctr:
-            return "medium"
+        elif medium >= big:
+            return "med"
         else:
             return "big"
+
+        
 
 
     def no_motion_save(self, delta, frame):
