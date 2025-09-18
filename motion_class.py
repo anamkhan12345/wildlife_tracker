@@ -226,7 +226,7 @@ class MultipleFrameFilter:
         return original_frame
 
 
-    def dominant_detection_size(self):
+    def dominant_detection_size(self, small_limit, med_limit, big_limit):
         if not self.motion_found:
             return None
         
@@ -234,14 +234,22 @@ class MultipleFrameFilter:
         counts = Counter(sizes)
 
         small = counts["small"]
-        medium = counts["medium"]
+        med = counts["medium"]
         big = counts["big"]
 
-        if small >= medium and small >= big:
+        exceed_small = (self.small_ctr + small > small_limit)
+        exceed_med = (self.med_ctr + med > med_limit)
+        exceed_big = (self.big_ctr + big > big_limit)
+
+        need_small = small > 0 and not exceed_small
+        need_med = med > 0 and not exceed_med
+        need_big = big > 0 and not exceed_big
+
+        if need_small:
             return "small"
-        elif medium >= big:
+        elif need_med:
             return "med"
-        else:
+        elif need_big:
             return "big"
 
         

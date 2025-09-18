@@ -101,34 +101,33 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
                 # Data collection scheduling
                 count_category = motion_filter.detection_category
-                priority = motion_filter.dominant_detection_size()
+                dominant_detection = motion_filter.dominant_detection_size()
                 should_save = False
-                print(f'Priority: {priority}')
 
                 if count_category == "single":
-                    if priority == "small" and small_single_ctr < int((small_limit * 0.6)):  # 60% of small should be single
+                    if dominant_detection == "small" and small_single_ctr < int((small_limit * 0.6)):  # 60% of small should be single
                         should_save = True
                         small_single_ctr += 1
                         print(f'small single ctr: {small_single_ctr} / {small_limit}')
-                    elif priority == "med" and med_single_ctr < int((med_limit * 0.7)):  # 70% of med should be single
+                    elif dominant_detection == "med" and med_single_ctr < int((med_limit * 0.7)):  # 70% of med should be single
                         should_save = True
                         med_single_ctr += 1
                         print(f'med single ctr: {med_single_ctr} / {med_limit}')
-                    elif priority == "big" and big_single_ctr < int((big_limit * 0.8)):  # 80% of big should be single
+                    elif dominant_detection == "big" and big_single_ctr < int((big_limit * 0.8)):  # 80% of big should be single
                         should_save = True
                         big_single_ctr += 1
                         print(f'big single ctr: {big_single_ctr} / {big_limit}')
 
                 elif count_category == "multi":
-                    if priority == "small" and small_multi_ctr < (small_limit * 0.4):
+                    if dominant_detection == "small" and small_multi_ctr < (small_limit * 0.4):
                         should_save = True
                         small_multi_ctr += 1
                         print(f'small multi ctr: {small_multi_ctr} / {small_limit}')
-                    elif priority == "med" and med_multi_ctr < (med_limit * 0.3):
+                    elif dominant_detection == "med" and med_multi_ctr < (med_limit * 0.3):
                         should_save = True
                         med_multi_ctr += 1
                         print(f'med multi ctr: {med_multi_ctr} / {med_limit}')
-                    elif priority == "big" and big_multi_ctr < (big_limit * 0.2):
+                    elif dominant_detection == "big" and big_multi_ctr < (big_limit * 0.2):
                         should_save = True
                         big_multi_ctr += 1
                         print(f'big multi ctr: {big_multi_ctr} / {big_limit}')
@@ -141,7 +140,10 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                     breakpoint()
                     motion_filter.yolo_annotation(det_frame, True)
                     print('***************************')
+                    print(f"Dominant Detection Size: {dominant_detection}")
+                    print(f"Count Category: {count_category}")
                     print(f'Small Detections: {motion_filter.small_ctr} / {small_limit}')
+                    print(f'Small Detections: {small_single_ctr + small_multi_ctr} / {small_limit}')
                     print(f'Med Detections: {motion_filter.med_ctr} / {med_limit}')
                     print(f'Big Detections: {motion_filter.big_ctr} / {big_limit}')
                     print("-")
