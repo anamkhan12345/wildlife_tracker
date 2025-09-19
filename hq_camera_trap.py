@@ -200,6 +200,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                     print("-")
                     print(f'Single Detections: {motion_filter.single_ctr} / {single_split}')
                     print(f'Mltpl Detections: {motion_filter.mltpl_ctr} / {mlt_split}')
+                    print(f'Negative Images: {motion_filter.neg_counter} / {neg_limit}')
 
                 # Save negative training data
                 # TODO: Instead of hidden class var, should use motion_filter return value to dictate
