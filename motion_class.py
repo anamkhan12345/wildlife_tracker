@@ -216,8 +216,6 @@ class MultipleFrameFilter:
             elif self.total_frm_detections > 1:
                 self.detection_category = "mltpl"
                 self.mltp_ctr = self.mltpl_ctr + 1
-
-
         else:
             pass
             #print(f"Too much motion detected: {timestamp}")

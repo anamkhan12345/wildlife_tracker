@@ -48,23 +48,23 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     #### Figure out data capture limits ####
 
     # By detection split
-    single_split = int(.6 * detection_limit)
-    mlt_split = int(.2 * detection_limit)
+    single_split = round(.6 * detection_limit)
+    mlt_split = round(.2 * detection_limit)
     detectable_split = single_split + mlt_split
-    neg_limit = int(.2 * detection_limit)
+    neg_limit = round(.2 * detection_limit)
 
-    small_total_split = int(.35 * detectable_split)
-    med_total_split = int(.45 * detectable_split)
-    big_total_split = int(.2 * detectable_split)
+    small_total_split = round(.35 * detectable_split)
+    med_total_split = round(.45 * detectable_split)
+    big_total_split = round(.2 * detectable_split)
 
     # Combined detection and size split
-    single_small_limit = int(.35 * single_split)
-    single_med_limit = int(.45  * single_split)
-    single_big_limit = int(.2  * single_split)
+    single_small_limit = round(.35 * single_split)
+    single_med_limit = round(.45  * single_split)
+    single_big_limit = round(.2  * single_split)
 
-    mlt_small_limit = int(.35 * mlt_split)
-    mlt_med_limit = int(.45  * mlt_split)
-    mlt_big_limit = int(.2 * mlt_split)
+    mlt_small_limit = round(.35 * mlt_split)
+    mlt_med_limit = round(.45  * mlt_split)
+    mlt_big_limit = round(.2 * mlt_split)
 
     # Check math 
     check_total = (single_small_limit + single_med_limit + single_big_limit  + 
@@ -80,12 +80,14 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
         print("issue with single split")
         print(f"Small Split: {single_small_limit}, Med Split: {single_med_limit}, Big Split: {single_big_limit}, Total: {single_small_limit + single_med_limit + single_big_limit}")
         print(f"Single Total: {single_split}")
+        exit
 
     if check_mlt != mlt_split:
         print("**************")
         print("issue with Mltpl split")
         print(f"Small Split: {mlt_small_limit}, Med Split: {mlt_med_limit}, Big Split: {mlt_big_limit}")
         print(f"Single Total: {mlt_split}")
+        exit
 
     if check_total != detection_limit:
         if (single_small_limit + mlt_small_limit) != (small_total_split):
@@ -100,6 +102,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
         else:
             print("something is wrong but idk")
             print(f"Check Total: {check_total}, Detection Limit: {detection_limit}")
+        exit
     else:
         print("good calc!")
 
@@ -186,7 +189,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
 
                 if should_save:
-                    motion_filter.yolo_annotation(det_frame, True)
+                    motion_filter.yolo_annotation(det_frame, frame, True)
                     print('***************************')
                     print(f"Dominant {dominant_detection}")
                     print(f"Count Category: {count_category}")
