@@ -211,11 +211,9 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
                 # Display diffs
                 #cv.imshow('Video', orig_frame)
-                #cv.imshow('Gray', gray)
-                #cv.imshow('Blur', blur)
                 #cv.imwrite('image/filter.jpg', veg_plot_org)
                 #cv.imshow('Grid Overlay', grid_frame)
-                #cv.imwrite('image/grid.jpg', grid_frame)
+                cv.imwrite('image/grid.jpg', grid_frame)
                 #cv.imshow('Vegetation Filter', motion)
                 #cv.imshow('Motion Filter', filtered_frame)
         else:
