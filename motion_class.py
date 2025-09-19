@@ -134,10 +134,10 @@ class MultipleFrameFilter:
                 # class x_center y_center width height
                 file.write(f"0 {yolo_format['x_cent'][i]} {yolo_format['y_cent'][i]} {yolo_format['width'][i]} {yolo_format['height'][i]}\n")
 
-    def yolo_annotation(self, og_frame, save_data):
+    def yolo_annotation(self, bbox_frame, og_frame, save_data):
         # After drawing all bounding boxes - save img with drawings and yolo formatted text file
         if self.motion_found:
-            frame = og_frame.copy()
+            frame = bbox_frame.copy()
             self.downloads = self.downloads + 1
             max_area = max(self.all_box_area)
             print(f"Motion detected: Area={max_area}, Detection Count: {self.downloads}")
@@ -155,11 +155,11 @@ class MultipleFrameFilter:
                            'height': yolo_height}
             if save_data:
                 if max_area > 50 and max_area < 500:
-                    self.save_data(max_area, yolo_format, self.small_img_dir, frame, og_frame)
+                    self.save_data(max_area, yolo_format, self.small_img_dir, bbox_frame, og_frame)
                 elif max_area >= 500 and max_area < 2000:
-                    self.save_data(max_area, yolo_format, self.med_img_dir, frame, og_frame)
+                    self.save_data(max_area, yolo_format, self.med_img_dir, bbox_frame, og_frame)
                 elif max_area >= 2000:
-                    self.save_data(max_area, yolo_format, self.big_img_dir, frame, og_frame)
+                    self.save_data(max_area, yolo_format, self.big_img_dir, bbox_frame, og_frame)
 
     def motion_filter(self, persistent_motion, original_frame, min_area):
 
@@ -219,7 +219,8 @@ class MultipleFrameFilter:
 
 
         else:
-            print(f"Too much motion detected: {timestamp}")
+            pass
+            #print(f"Too much motion detected: {timestamp}")
 
         return original_frame
 
@@ -250,8 +251,6 @@ class MultipleFrameFilter:
         elif need_big:
             return "big"
 
-        
-
 
     def no_motion_save(self, delta, frame):
         # Check if it's time to capture
@@ -272,7 +271,6 @@ class MultipleFrameFilter:
             # Create empty text file to go with image
             self.last_neg = current_time
             print(f"saved random image: {self.neg_counter}")
-    
 
 
 def add_grid(image, rows=3, cols=3, color=(255, 255, 255), thickness=2, alpha=0.8):

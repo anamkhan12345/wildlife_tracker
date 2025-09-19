@@ -395,8 +395,7 @@ def plot_distribution_analysis(df):
 
 
 def analysis():
-    input_dir = r'C:\Users\anamk\projects\wildlife_tracker\image\yolo_bird_data'
-
+    input_dir = r"C:\Users\anamk\projects\dataSets\09182025"
     # Create dataframe with detection info
     df = data_gen.create_df(input_dir, delim='_')
 

@@ -12,9 +12,11 @@ from PIL.ExifTags import TAGS
 def check_image_label_matches(source_dir):
 
     all_files = glob.glob(f"{source_dir}/**/*", recursive=True)
-    image_files = [Path(f) for f in all_files if f.endswith('.jpg')]
-    label_files = [Path(f) for f in all_files if f.endswith('.txt')]
+    no_raw_image_files = [f for f in all_files if ( "detect" in f or "negative" in f ) and "detectRaw" not in f]
 
+    image_files = [Path(f) for f in no_raw_image_files if f.endswith('.jpg')]
+    label_files = [Path(f) for f in all_files if f.endswith('.txt')]
+    breakpoint()
     label_stems = {f.stem for f in label_files}
     image_stems = {f.stem for f in image_files}
     missing_labels = []
@@ -307,11 +309,12 @@ def copy_files_to_yolo_structure(file_split, output_dir):
 
 # Read in all the label files
 def check():
-    input_dir = r"C:\Users\anamk\projects\wildlife_tracker\image\yolo_bird_data"
+    input_dir = r"C:\Users\anamk\projects\dataSets\09182025"
 
     # Verify that each label file has corresponding .jpg file
     yolo_formatted, missing_labels, missing_images = check_image_label_matches(input_dir)
     print(f"Yolo formatted: {yolo_formatted}")
+    
     if not yolo_formatted:
         exit()
 

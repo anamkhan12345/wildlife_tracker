@@ -45,14 +45,42 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     detection_model.ncnn_model(model_path)
     detection_model.ML = False
 
-    # Figure out data capture limits
-    small_limit = int(detection_limit * 0.3)
-    med_limit = int(detection_limit * 0.45)
-    big_limit = int(detection_limit * 0.25)
+    #### Figure out data capture limits ####
 
-    single_limit = int(detection_limit * .6)
-    mltp_limit = int(detection_limit * .4)
-    print(f"Small limit: {small_limit}, Med limit: {med_limit}, Big limit: {big_limit}, Single limit: {single_limit}, MLTp limit: {mltp_limit}")
+    # By detection split
+    single_split = .5 * detection_limit
+    mlt_split = .3 * detection_limit
+    neg_limit = .2 * detection_limit
+
+    small_total_split = .35 * detection_limit
+    med_total_split = .45 * detection_limit
+    big_total_split = .2 * detection_limit
+
+    # Combined detection and size split
+    single_small_limit = .35 * small_total_split * single_split
+    single_med_limit = .45 * med_total_split * single_split
+    single_big_limit = .2 * big_total_split * single_split
+
+    mlt_small_limit = .35 * small_total_split * mlt_split
+    mlt_med_limit = .45 * med_total_split * mlt_split
+    mlt_big_limit = .2 * big_total_split * mlt_split
+
+    # Check math 
+    check_total = (single_small_limit + single_med_limit + single_big_limit  + 
+                    mlt_small_limit + mlt_med_limit + mlt_big_limit + 
+                    neg_limit)
+
+
+    if check_total != detection_limit:
+        if (single_small_limit + mlt_small_limit) != (detection_limit * small_total_split):
+            print("Something wrong with your SMALL splits")
+        elif (single_med_limit + mlt_med_limit) != (detection_limit * med_total_split):
+            print("Something wrong with your MED splits")
+        elif (single_big_limit + mlt_big_limit) != (detection_limit * big_total_split):
+            print("Something wrong with your BIG splits")
+
+
+    print(f"Small limit: {small_total_split}, Med limit: {med_total_split}, Big limit: {big_total_split}, Single limit: {single_split}, MLTp limit: {mlt_split}")
 
     # Counters for combined categories (add these)
     small_single_ctr = 0
@@ -75,7 +103,6 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
             # Show the re-sized webcam images
             orig_frame = frame.copy()
             gray = cv.cvtColor(orig_frame, cv.COLOR_RGB2GRAY)
-            blur = cv.GaussianBlur(gray, (5,5),0)
 
             if detection_model.ML:
                 result = detection_model.model(orig_frame) 
@@ -137,8 +164,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                 if should_save:
                     motion_filter.yolo_annotation(det_frame, True)
                     print('***************************')
-                    print(f"Dominant Detecte_ctr + small_multi_ctr} / {small_limit}')
-Too much motion detected: 1758201142301                                                                               │144                     print(f'Med Detections: {motion_filter.meion Size: {dominant_detection}")
+                    print(f"Dominant {dominant_detection}")
                     print(f"Count Category: {count_category}")
                     print(f'Small Detections: {motion_filter.small_ctr} / {small_limit}')
                     print(f'Small Detections: {small_single_ctr + small_multi_ctr} / {small_limit}')
@@ -151,7 +177,9 @@ Too much motion detected: 1758201142301                                         
                 # Save negative training data
                 # TODO: Instead of hidden class var, should use motion_filter return value to dictate
                 # no_motion saving
-                motion_filter.no_motion_save(delta, orig_frame)
+
+                if motion_filter.neg_counter < neg_limit:
+                    motion_filter.no_motion_save(delta, orig_frame)
 
                 # Display diffs
                 #cv.imshow('Video', orig_frame)
