@@ -48,36 +48,60 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     #### Figure out data capture limits ####
 
     # By detection split
-    single_split = .5 * detection_limit
-    mlt_split = .3 * detection_limit
-    neg_limit = .2 * detection_limit
+    single_split = int(.6 * detection_limit)
+    mlt_split = int(.2 * detection_limit)
+    detectable_split = single_split + mlt_split
+    neg_limit = int(.2 * detection_limit)
 
-    small_total_split = .35 * detection_limit
-    med_total_split = .45 * detection_limit
-    big_total_split = .2 * detection_limit
+    small_total_split = int(.35 * detectable_split)
+    med_total_split = int(.45 * detectable_split)
+    big_total_split = int(.2 * detectable_split)
 
     # Combined detection and size split
-    single_small_limit = .35 * small_total_split * single_split
-    single_med_limit = .45 * med_total_split * single_split
-    single_big_limit = .2 * big_total_split * single_split
+    single_small_limit = int(.35 * single_split)
+    single_med_limit = int(.45  * single_split)
+    single_big_limit = int(.2  * single_split)
 
-    mlt_small_limit = .35 * small_total_split * mlt_split
-    mlt_med_limit = .45 * med_total_split * mlt_split
-    mlt_big_limit = .2 * big_total_split * mlt_split
+    mlt_small_limit = int(.35 * mlt_split)
+    mlt_med_limit = int(.45  * mlt_split)
+    mlt_big_limit = int(.2 * mlt_split)
 
     # Check math 
     check_total = (single_small_limit + single_med_limit + single_big_limit  + 
                     mlt_small_limit + mlt_med_limit + mlt_big_limit + 
                     neg_limit)
 
+    check_single = single_small_limit + single_med_limit + single_big_limit
+    check_mlt = mlt_small_limit + mlt_med_limit + mlt_big_limit
+
+
+    if check_single != single_split:
+        print("**************")
+        print("issue with single split")
+        print(f"Small Split: {single_small_limit}, Med Split: {single_med_limit}, Big Split: {single_big_limit}, Total: {single_small_limit + single_med_limit + single_big_limit}")
+        print(f"Single Total: {single_split}")
+
+    if check_mlt != mlt_split:
+        print("**************")
+        print("issue with Mltpl split")
+        print(f"Small Split: {mlt_small_limit}, Med Split: {mlt_med_limit}, Big Split: {mlt_big_limit}")
+        print(f"Single Total: {mlt_split}")
 
     if check_total != detection_limit:
-        if (single_small_limit + mlt_small_limit) != (detection_limit * small_total_split):
+        if (single_small_limit + mlt_small_limit) != (small_total_split):
             print("Something wrong with your SMALL splits")
-        elif (single_med_limit + mlt_med_limit) != (detection_limit * med_total_split):
+            print(f"Single Split: {single_small_limit}, Mlt Split: {mlt_small_limit}, Total: {small_total_split}")
+        elif (single_med_limit + mlt_med_limit) != (med_total_split):
             print("Something wrong with your MED splits")
-        elif (single_big_limit + mlt_big_limit) != (detection_limit * big_total_split):
+            print(f"Single Split: {single_med_limit}, Mlt Split: {mlt_med_limit}, Total: {med_total_split}")
+        elif (single_big_limit + mlt_big_limit) != (big_total_split):
             print("Something wrong with your BIG splits")
+            print(f"Single Split: {single_big_limit}, Mlt Split: {mlt_big_limit}, Total: {big_total_split}")
+        else:
+            print("something is wrong but idk")
+            print(f"Check Total: {check_total}, Detection Limit: {detection_limit}")
+    else:
+        print("good calc!")
 
 
     print(f"Small limit: {small_total_split}, Med limit: {med_total_split}, Big limit: {big_total_split}, Single limit: {single_split}, MLTp limit: {mlt_split}")
@@ -129,36 +153,36 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
                 # Data collection scheduling
                 count_category = motion_filter.detection_category
-                dominant_detection = motion_filter.dominant_detection_size(small_limit, med_limit, big_limit)
+                dominant_detection = motion_filter.dominant_detection_size(small_total_split, med_total_split, big_total_split)
                 should_save = False
 
-                if count_category == "single" and (motion_filter.single_ctr < single_limit):
-                    if dominant_detection == "small" and small_single_ctr < int((single_limit * 0.3)):  # 60% of small should be single
+                if count_category == "single" and (motion_filter.single_ctr < single_split):
+                    if dominant_detection == "small" and small_single_ctr < single_small_limit:
                         should_save = True
                         small_single_ctr += 1
-                        print(f'small single ctr: {small_single_ctr} / {small_limit}')
-                    elif dominant_detection == "med" and med_single_ctr < int((single_limit * 0.45)):  # 70% of med should be single
+                        print(f'small single ctr: {small_single_ctr} / {small_total_split}')
+                    elif dominant_detection == "med" and med_single_ctr < single_med_limit:
                         should_save = True
                         med_single_ctr += 1
-                        print(f'med single ctr: {med_single_ctr} / {med_limit}')
-                    elif dominant_detection == "big" and big_single_ctr < int((single_limit * 0.25)):  # 80% of big should be single
+                        print(f'med single ctr: {med_single_ctr} / {med_total_split}')
+                    elif dominant_detection == "big" and big_single_ctr < single_big_limit:
                         should_save = True
                         big_single_ctr += 1
-                        print(f'big single ctr: {big_single_ctr} / {big_limit}')
+                        print(f'big single ctr: {big_single_ctr} / {big_total_split}')
 
-                elif count_category == "multi" and (motion_filter.mltp_ctr < mltp_limit):
-                    if dominant_detection == "small" and small_multi_ctr < (mltp_limit * 0.3):
+                elif count_category == "multi" and (motion_filter.mltp_ctr < mlt_split):
+                    if dominant_detection == "small" and small_multi_ctr < mlt_small_limit:
                         should_save = True
                         small_multi_ctr += 1
-                        print(f'small multi ctr: {small_multi_ctr} / {small_limit}')
-                    elif dominant_detection == "med" and med_multi_ctr < (mltp_limit * 0.45):
+                        print(f'small multi ctr: {small_multi_ctr} / {small_total_split}')
+                    elif dominant_detection == "med" and med_multi_ctr < mlt_med_limit:
                         should_save = True
                         med_multi_ctr += 1
-                        print(f'med multi ctr: {med_multi_ctr} / {med_limit}')
-                    elif dominant_detection == "big" and big_multi_ctr < (mltp_limit * 0.25):
+                        print(f'med multi ctr: {med_multi_ctr} / {med_total_split}')
+                    elif dominant_detection == "big" and big_multi_ctr < mlt_big_limit:
                         should_save = True
                         big_multi_ctr += 1
-                        print(f'big multi ctr: {big_multi_ctr} / {big_limit}')
+                        print(f'big multi ctr: {big_multi_ctr} / {big_total_split}')
 
 
                 if should_save:
@@ -166,13 +190,13 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                     print('***************************')
                     print(f"Dominant {dominant_detection}")
                     print(f"Count Category: {count_category}")
-                    print(f'Small Detections: {motion_filter.small_ctr} / {small_limit}')
-                    print(f'Small Detections: {small_single_ctr + small_multi_ctr} / {small_limit}')
-                    print(f'Med Detections: {motion_filter.med_ctr} / {med_limit}')
-                    print(f'Big Detections: {motion_filter.big_ctr} / {big_limit}')
+                    print(f'Small Detections: {motion_filter.small_ctr} / {small_total_split}')
+                    print(f'Small Detections: {small_single_ctr + small_multi_ctr} / {small_total_split}')
+                    print(f'Med Detections: {motion_filter.med_ctr} / {med_total_split}')
+                    print(f'Big Detections: {motion_filter.big_ctr} / {big_total_split}')
                     print("-")
-                    print(f'Single Detections: {motion_filter.single_ctr} / {single_limit}')
-                    print(f'Mltpl Detections: {motion_filter.mltpl_ctr} / {mltp_limit}')
+                    print(f'Single Detections: {motion_filter.single_ctr} / {single_split}')
+                    print(f'Mltpl Detections: {motion_filter.mltpl_ctr} / {mlt_split}')
 
                 # Save negative training data
                 # TODO: Instead of hidden class var, should use motion_filter return value to dictate
