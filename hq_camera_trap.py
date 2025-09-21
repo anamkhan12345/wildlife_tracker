@@ -27,8 +27,9 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     # Define vegetation areas as rectangles (x1, y1, x2, y2)
     detector = motion_class.VegetationFilter()
     veg_zone = [
-            (960, 0, 1919, 1079),
-            (768, 756, 960, 1079)
+            (round(192*5), round(108*7.7), round(192*6.5), 1079), # big middle window
+            (round(192*9.5), round(108*8), 1919, 1079), # other window to right
+            (0,0,192,1079) # patio  
         ]
 
     # Motion filter over frames
@@ -37,7 +38,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
     counter = 0
 
     # No motion saves
-    delta = 180 # seconds, 5 mins
+    delta = 360 # seconds, 5 mins
 
     # Setup ML model
     model_path = r'models/best_09082025.pt'
@@ -146,7 +147,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                            (0,255,0), 1, lineType=cv.LINE_AA)
 
                 # Set Vegetation areas
-                #detector.set_vegetation_zones(orig_frame.shape, veg_zone)
+                detector.set_vegetation_zones(orig_frame.shape, veg_zone)
 
                 # Find motion
                 motion = detector.adaptive_learning(gray)
@@ -211,7 +212,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
 
                 # Display diffs
                 #cv.imshow('Video', orig_frame)
-                #cv.imwrite('image/filter.jpg', veg_plot_org)
+                cv.imwrite('image/filter.jpg', veg_plot_org)
                 #cv.imshow('Grid Overlay', grid_frame)
                 cv.imwrite('image/grid.jpg', grid_frame)
                 #cv.imshow('Vegetation Filter', motion)
