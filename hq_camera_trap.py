@@ -132,7 +132,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
             orig_frame = frame.copy()
             gray = cv.cvtColor(orig_frame, cv.COLOR_RGB2GRAY)
 
-            if detection_model.ML:
+            if detection_model.ML: 
                 result = detection_model.model(orig_frame) 
                 detection_model.parse_detection(result, frame)
             else:
@@ -161,7 +161,7 @@ def hq_cam_trap(cam_id, detection_area, detection_limit):
                 should_save = False
 
                 if count_category == "single" and (motion_filter.single_ctr < single_split):
-                    if dominant_detection == "small" and small_single_ctr < single_small_limit:
+                    if dominant_detection[0] == "small" and small_single_ctr < single_small_limit:
                         should_save = True
                         small_single_ctr += 1
                         print(f'small single ctr: {small_single_ctr} / {small_total_split}')

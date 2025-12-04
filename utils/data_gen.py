@@ -1,4 +1,5 @@
 import os
+import csv
 import glob
 import pandas as pd
 import numpy as np
@@ -9,14 +10,57 @@ from pathlib import Path
 from PIL import Image
 from PIL.ExifTags import TAGS
 
+
+def files_to_annotate(source_dir):
+
+    all_files = glob.glob(f"{source_dir}/**/*", recursive=True) # Search Dir
+    breakpoint()
+    re_annotate_files = [f for f in all_files if ( "-x" in f)] # Key 
+    raw_img_files = [f for f in all_files if "detectRaw" in f] # Search list - to rename 
+    label_files = [Path(f) for f in all_files if f.endswith('.txt')] # Search list - to delete
+
+    annotate_files = [Path(f) for f in re_annotate_files]
+    raw_files = [Path(f) for f in raw_img_files]
+    label_files = [Path(f) for f in all_files if f.endswith('.txt')]
+
+    raw_search_list = [x.replace("_motion", "") for x in raw_img_files]
+
+    labels_to_delete = []
+    raw_to_annotate = []
+
+
+    for annotation in annotate_files:
+        og_label_match = annotation.stem.replace("-x", "")
+        og_raw_match = og_label_match.replace("detect", "detectRaw")
+
+        aLabel = [x for x in label_files if og_label_match in x.stem]
+        if aLabel:
+            labels_to_delete.append(aLabel[0])
+            print(f"✗ Deleting label: {aLabel[0]} for {annotation}")
+            os.remove(aLabel[0])
+
+
+        aRaw = [index for index,element in enumerate(raw_search_list) if og_raw_match in Path(element).stem]
+        if aRaw:
+            raw_file = raw_files[aRaw[0]]
+            raw_to_annotate.append(raw_file)
+            print(f"✗ Adding raw image to annotate: {raw_file} for {annotation}")
+            base_name = os.path.dirname(raw_file)
+            new_name = "annotate_" + raw_file.stem + raw_file.suffix
+            new_full_path = os.path.join(base_name, new_name)
+            os.rename(raw_file, new_full_path)
+
+
 def check_image_label_matches(source_dir):
 
     all_files = glob.glob(f"{source_dir}/**/*", recursive=True)
     no_raw_image_files = [f for f in all_files if ( "detect" in f or "negative" in f ) and "detectRaw" not in f]
+    raw_img_files = [f for f in all_files if "detectRaw" in f]
 
     image_files = [Path(f) for f in no_raw_image_files if f.endswith('.jpg')]
     label_files = [Path(f) for f in all_files if f.endswith('.txt')]
-    breakpoint()
+    raw_files = [Path(f) for f in raw_img_files]
+
     label_stems = {f.stem for f in label_files}
     image_stems = {f.stem for f in image_files}
     missing_labels = []
@@ -26,6 +70,13 @@ def check_image_label_matches(source_dir):
         if img_file.stem not in label_stems:
             missing_labels.append(img_file)
             print(f"✗ Missing label: {img_file.stem}.txt for {img_file}")
+
+    # for raw_file in raw_files:
+    #     raw_match = raw_file.stem.replace("detectRaw", "detect")
+    #     raw_match = raw_match.replace("_motion", "")
+    #     if raw_match not in image_stems:
+    #         missing_image.append(raw_file)
+    #         print(f"✗ Missing image: {raw_match}.jpg for {raw_file.stem}")
 
     for label_file in label_files:
         if label_file.stem not in image_stems:
@@ -152,7 +203,6 @@ def create_df(dir, delim):
     df = df.sort_values("times")
 
     return df
-
 
 def remove_files(files):
     for f in files:
@@ -309,17 +359,24 @@ def copy_files_to_yolo_structure(file_split, output_dir):
 
 # Read in all the label files
 def check():
-    input_dir = r"C:\Users\anamk\projects\dataSets\09182025"
 
     # Verify that each label file has corresponding .jpg file
-    yolo_formatted, missing_labels, missing_images = check_image_label_matches(input_dir)
-    print(f"Yolo formatted: {yolo_formatted}")
-    
-    if not yolo_formatted:
-        exit()
+    input_dir = r"C:\Users\anamk\projects\dataSets\birds.v1-v0_bare_bones.yolov11\train"
+    img_file = r"C:\Users\anamk\projects\dataSets\birds.v1-v0_bare_bones.yolov11\train\images\annotate_detectRaw_1758540743421_area_8512_motion_404_jpg.rf.7fad090b7777c1057c870bb7a56377e6.jpg"
+    txt_file = r"C:\Users\anamk\projects\dataSets\birds.v1-v0_bare_bones.yolov11\train\labels\annotate_detectRaw_1758540743421_area_8512_motion_404_jpg.rf.7fad090b7777c1057c870bb7a56377e6.txt"
+    yolo_format_verif(txt_file, img_file, show_comp=True)
+    #yolo_formatted, missing_labels, missing_images = check_image_label_matches(input_dir)
+    # print(f"Yolo formatted: {yolo_formatted}")
+    # breakpoint()
+    # if not yolo_formatted:
+    #     exit()
+
+    # breakpoint()
+    # output_csv = 'long_batch_files.csv'
+    # fileName_to_csv(input_dir, output_csv)
 
     # Create dataframe with detection info
-    df = create_df(input_dir, delim='_')
+    # df = create_df(input_dir, delim='_')
 
     # # # Test train val split for detections and negative detectoins
     # file_split_1 = train_val_test_split(df)

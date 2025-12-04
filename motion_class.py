@@ -219,7 +219,7 @@ class MultipleFrameFilter:
         else:
             pass
             #print(f"Too much motion detected: {timestamp}")
-
+    
         return original_frame
 
 
@@ -242,12 +242,12 @@ class MultipleFrameFilter:
         need_med = med > 0 and not exceed_med
         need_big = big > 0 and not exceed_big
 
-        if need_small:
-            return "small"
-        elif need_med:
-            return "med"
-        elif need_big:
-            return "big"
+        if need_small and not exceed_med and not exceed_big:
+            return ["small", small]
+        elif need_med and not exceed_small and not exceed_big:
+            return ["med", med]
+        elif need_big and not exceed_small and not exceed_big:
+            return ["big", big]
 
 
     def no_motion_save(self, delta, frame):
