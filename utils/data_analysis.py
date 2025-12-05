@@ -9,7 +9,6 @@ def plot_set_1(df):
     # Plot areas captured and detection times
     #TODO: This is only the MAX area detected in each frame, not all bounding boxes
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-    breakpoint()
     sns.histplot(data=df, x='max_areas', kde=True, ax=axes[0,0])
     axes[0,0].set_title("Areas")
 
@@ -395,7 +394,7 @@ def plot_distribution_analysis(df):
 
 
 def analysis():
-    input_dir = r"C:\Users\anamk\projects\dataSets\09182025"
+    input_dir = r"C:\Users\anamk\projects\dataSets\birds.v4i.yolov11"
     # Create dataframe with detection info
     df = data_gen.create_df(input_dir, delim='_')
 

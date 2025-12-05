@@ -116,7 +116,11 @@ def extract_meta_data(jpg_file):
 
 def create_df(dir, delim):
     dir_ext = dir + "\**\*.txt"
-    files = glob.glob(dir_ext, recursive=True)
+    full_files = glob.glob(dir_ext, recursive=True)
+    files_to_remove = [x for x in full_files if ('README' in x) ]
+    files = [f for f in full_files if f not in files_to_remove]
+    breakpoint()
+
     max_areas = []
     times = []
     detections = []
@@ -136,52 +140,59 @@ def create_df(dir, delim):
     for f in files:
         name = os.path.basename(f)
         parts = name.split(delim)
-        if parts[0] == 'detect':
+        print(f)
+        if 'motion' in parts:
             aClass = 'bird'
-        else:
+        elif 'negative' in parts:
             aClass = 'negative'
-        data_class.append(aClass)
-
-        aArea = float(parts[3])
-        max_areas.append(aArea)
-        aTime = float(parts[1])
-        times.append(aTime)
-
-        # Find corresponding jpg file
-        jpg = next(Path(f).parent.parent.rglob(f"{Path(f).stem}.jpg"), None)
-        jpg_files.append(str(jpg))
-        if jpg is None:
-            print(f"**** Could not find jpg for {f} *****")
-            exit(1)
         else:
-            # Extract bbox info
-            img_size, coordinates = xywh_pixel(f, jpg)
-            img_size_str = str(img_size)
-            aspect_ratio = ( img_size[0] / img_size[1] )
-            bbox_areas = [x['width']* x['height'] for x in coordinates]
-            bbox_centroids = [(x['x_cent'], x['y_cent']) for x in coordinates]
-            x1 = [x['x1'] for x in coordinates]
-            y1 = [x['y1'] for x in coordinates]
-            x2 = [x['x2'] for x in coordinates]
-            y2 = [x['y2'] for x in coordinates]
+            aClass = ''
+        
+        if not aClass:
+            print(f"**** Not Processing {f} *****")
+        else:
+            data_class.append(aClass)
+            aArea = float(parts[3])
+            max_areas.append(aArea)
+            aTime = float(parts[1])
+            times.append(aTime)
 
-            # Set up for df
-            jpg_size.append(img_size_str)
-            ar.append(aspect_ratio)
-            box_area.append(bbox_areas)
-            box_cent.append(bbox_centroids)
-            x_1.append(x1)
-            y_1.append(y1)
-            x_2.append(x2)
-            y_2.append(y2)
+            # Find corresponding jpg file
+            jpg = next(Path(f).parent.parent.rglob(f"{Path(f).stem}.jpg"), None)
+            jpg_files.append(str(jpg))
+            if jpg is None:
+                print(f"**** Could not find jpg for {f} *****")
+                exit(1)
+            else:
+                # Extract bbox info
+                img_size, coordinates = xywh_pixel(f, jpg)
+                img_size_str = str(img_size)
+                aspect_ratio = ( img_size[0] / img_size[1] )
+                bbox_areas = [x['width']* x['height'] for x in coordinates]
+                bbox_centroids = [(x['x_cent'], x['y_cent']) for x in coordinates]
+                x1 = [x['x1'] for x in coordinates]
+                y1 = [x['y1'] for x in coordinates]
+                x2 = [x['x2'] for x in coordinates]
+                y2 = [x['y2'] for x in coordinates]
 
-        # Get total detections
-        with open(f, "r") as aFile:
-            num_lines = sum(1 for _ in aFile)
-            detections.append(num_lines)
+                # Set up for df
+                jpg_size.append(img_size_str)
+                ar.append(aspect_ratio)
+                box_area.append(bbox_areas)
+                box_cent.append(bbox_centroids)
+                x_1.append(x1)
+                y_1.append(y1)
+                x_2.append(x2)
+                y_2.append(y2)
+
+            # Get total detections
+            with open(f, "r") as aFile:
+                num_lines = sum(1 for _ in aFile)
+                detections.append(num_lines)
 
     time_dt = pd.to_datetime(times, unit='ms', utc=True).tz_convert('US/Eastern')
     hours_dt = [x.hour for x in time_dt]
+    breakpoint()
     df = pd.DataFrame({
         "class": data_class,
         "detections": detections,
@@ -361,10 +372,11 @@ def copy_files_to_yolo_structure(file_split, output_dir):
 def check():
 
     # Verify that each label file has corresponding .jpg file
-    input_dir = r"C:\Users\anamk\projects\dataSets\birds.v1-v0_bare_bones.yolov11\train"
+    input_dir = r"C:\Users\anamk\projects\dataSets\birds.v4i.yolov11"
     img_file = r"C:\Users\anamk\projects\dataSets\birds.v1-v0_bare_bones.yolov11\train\images\annotate_detectRaw_1758540743421_area_8512_motion_404_jpg.rf.7fad090b7777c1057c870bb7a56377e6.jpg"
     txt_file = r"C:\Users\anamk\projects\dataSets\birds.v1-v0_bare_bones.yolov11\train\labels\annotate_detectRaw_1758540743421_area_8512_motion_404_jpg.rf.7fad090b7777c1057c870bb7a56377e6.txt"
     yolo_format_verif(txt_file, img_file, show_comp=True)
+    
     #yolo_formatted, missing_labels, missing_images = check_image_label_matches(input_dir)
     # print(f"Yolo formatted: {yolo_formatted}")
     # breakpoint()
