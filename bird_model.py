@@ -47,7 +47,7 @@ class BirdModel:
         cls = detection.boxes.cls
         totalDetections = cls.numel()
         self.detection = False
-
+        detection_info = {}
         if totalDetections > 0:
             print(f"Detections: {totalDetections}")
             # Areas
