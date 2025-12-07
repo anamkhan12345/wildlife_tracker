@@ -104,16 +104,16 @@ class BirdModel:
 
         print(response.json())
 
-
     def get_all_dashboard_stats(self):
+
         conn = sqlite3.connect('detections.db')
         cursor = conn.cursor()
         
-        # 1. Total all time
+        # 1. Total detections all time
         cursor.execute("SELECT SUM(detection_count) FROM detections")
         total_all_time = cursor.fetchone()[0] or 0
         
-        # 2. Total today
+        # 2. Total detections today
         cursor.execute("""
             SELECT SUM(detection_count) 
             FROM detections 
@@ -121,7 +121,7 @@ class BirdModel:
         """)
         total_today = cursor.fetchone()[0] or 0
         
-        # 3. Hourly averages (all time)
+        # 3. Average detections per hour (each hour 0-23, all time)
         cursor.execute("""
             SELECT 
                 hour_of_day,
@@ -133,17 +133,18 @@ class BirdModel:
         hourly_data = cursor.fetchall()
         hourly_df = pd.DataFrame(hourly_data, columns=['Hour', 'Avg Detections'])
         
-        # 4. Latest image
+        # 4. Most recent image path AND timestamp
         cursor.execute("""
-            SELECT image_path 
+            SELECT image_path, timestamp
             FROM detections 
             ORDER BY timestamp DESC 
             LIMIT 1
         """)
         latest_result = cursor.fetchone()
         latest_image_path = latest_result[0] if latest_result else None
+        latest_timestamp = latest_result[1] if latest_result else None
         
-        # 5. Largest detection of all time
+        # 5. Largest detection image path
         cursor.execute("""
             SELECT image_path, max_detection_area
             FROM detections 
@@ -161,9 +162,7 @@ class BirdModel:
             'total_today': total_today,
             'hourly_df': hourly_df,
             'latest_image': latest_image_path,
+            'latest_timestamp': latest_timestamp,  # Added timestamp
             'largest_image': largest_image_path,
             'largest_area': largest_area
         }
-    
-
-
