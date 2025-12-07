@@ -104,24 +104,24 @@ class BirdModel:
 
         print(response.json())
 
-    def get_stats(self, database="detections.db"):
-        breakpoint()
-        conn = sqlite3.connect(database)
+
+    def get_all_dashboard_stats(self):
+        conn = sqlite3.connect('detections.db')
         cursor = conn.cursor()
         
-        # Total all time
+        # 1. Total all time
         cursor.execute("SELECT SUM(detection_count) FROM detections")
-        total = cursor.fetchone()[0] or 0
+        total_all_time = cursor.fetchone()[0] or 0
         
-        # Today
+        # 2. Total today
         cursor.execute("""
             SELECT SUM(detection_count) 
             FROM detections 
             WHERE DATE(timestamp) = DATE('now')
         """)
-        today = cursor.fetchone()[0] or 0
+        total_today = cursor.fetchone()[0] or 0
         
-        # Get average detections for each hour of the day (0-23)
+        # 3. Hourly averages (all time)
         cursor.execute("""
             SELECT 
                 hour_of_day,
@@ -130,11 +130,40 @@ class BirdModel:
             GROUP BY hour_of_day
             ORDER BY CAST(hour_of_day AS INTEGER)
         """)
-
-        data = cursor.fetchall()
+        hourly_data = cursor.fetchall()
+        hourly_df = pd.DataFrame(hourly_data, columns=['Hour', 'Avg Detections'])
+        
+        # 4. Latest image
+        cursor.execute("""
+            SELECT image_path 
+            FROM detections 
+            ORDER BY timestamp DESC 
+            LIMIT 1
+        """)
+        latest_result = cursor.fetchone()
+        latest_image_path = latest_result[0] if latest_result else None
+        
+        # 5. Largest detection of all time
+        cursor.execute("""
+            SELECT image_path, max_detection_area
+            FROM detections 
+            ORDER BY max_detection_area DESC 
+            LIMIT 1
+        """)
+        largest_result = cursor.fetchone()
+        largest_image_path = largest_result[0] if largest_result else None
+        largest_area = largest_result[1] if largest_result else 0
+        
         conn.close()
         
-        # Convert to DataFrame
-        df = pd.DataFrame(data, columns=['Hour', 'Avg Detections'])
-        print(df.head())
-        return total, today, df
+        return {
+            'total_all_time': total_all_time,
+            'total_today': total_today,
+            'hourly_df': hourly_df,
+            'latest_image': latest_image_path,
+            'largest_image': largest_image_path,
+            'largest_area': largest_area
+        }
+    
+
+

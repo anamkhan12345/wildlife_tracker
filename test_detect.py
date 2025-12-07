@@ -7,6 +7,8 @@ import glob
 from ultralytics import YOLO
 import bird_model
 import sqlite3
+import streamlit as st
+
 
 
 # Import the detection module
@@ -46,9 +48,3 @@ for file in test_files:
           json.dumps(sql_data['detection_json'][0])) )
     conn.commit()
     conn.close()
-
-    # SQLite DB functions to calculate stats
-    total, today, avg = model_utils.get_stats()
-    print(f"Total: {total}, Today: {today}")
-
-    # Upload stats to web server via streamlit
