@@ -54,7 +54,7 @@ def files_to_annotate(source_dir):
 def check_image_label_matches(source_dir):
 
     all_files = glob.glob(f"{source_dir}/**/*", recursive=True)
-    no_raw_image_files = [f for f in all_files if ( "detect" in f or "negative" in f ) and "detectRaw" not in f]
+    no_raw_image_files = [f for f in all_files if ( "motion" in f or "negative" in f )]
     raw_img_files = [f for f in all_files if "detectRaw" in f]
 
     image_files = [Path(f) for f in no_raw_image_files if f.endswith('.jpg')]
@@ -65,7 +65,7 @@ def check_image_label_matches(source_dir):
     image_stems = {f.stem for f in image_files}
     missing_labels = []
     missing_image = []
-
+    breakpoint()
     for img_file in image_files:
         if img_file.stem not in label_stems:
             missing_labels.append(img_file)
@@ -119,7 +119,6 @@ def create_df(dir, delim):
     full_files = glob.glob(dir_ext, recursive=True)
     files_to_remove = [x for x in full_files if ('README' in x) ]
     files = [f for f in full_files if f not in files_to_remove]
-    breakpoint()
 
     max_areas = []
     times = []
@@ -140,7 +139,6 @@ def create_df(dir, delim):
     for f in files:
         name = os.path.basename(f)
         parts = name.split(delim)
-        print(f)
         if 'motion' in parts:
             aClass = 'bird'
         elif 'negative' in parts:
@@ -192,7 +190,6 @@ def create_df(dir, delim):
 
     time_dt = pd.to_datetime(times, unit='ms', utc=True).tz_convert('US/Eastern')
     hours_dt = [x.hour for x in time_dt]
-    breakpoint()
     df = pd.DataFrame({
         "class": data_class,
         "detections": detections,
@@ -212,7 +209,8 @@ def create_df(dir, delim):
         })
     
     df = df.sort_values("times")
-
+    df.to_csv('detection_summary.csv', index=False)
+    breakpoint()
     return df
 
 def remove_files(files):
@@ -375,8 +373,8 @@ def check():
     input_dir = r"C:\Users\anamk\projects\dataSets\birds.v4i.yolov11"
     img_file = r"C:\Users\anamk\projects\dataSets\birds.v1-v0_bare_bones.yolov11\train\images\annotate_detectRaw_1758540743421_area_8512_motion_404_jpg.rf.7fad090b7777c1057c870bb7a56377e6.jpg"
     txt_file = r"C:\Users\anamk\projects\dataSets\birds.v1-v0_bare_bones.yolov11\train\labels\annotate_detectRaw_1758540743421_area_8512_motion_404_jpg.rf.7fad090b7777c1057c870bb7a56377e6.txt"
-    yolo_format_verif(txt_file, img_file, show_comp=True)
-    
+    check_image_label_matches(input_dir)
+
     #yolo_formatted, missing_labels, missing_images = check_image_label_matches(input_dir)
     # print(f"Yolo formatted: {yolo_formatted}")
     # breakpoint()

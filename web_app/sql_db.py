@@ -6,11 +6,12 @@ cursor = conn.cursor()
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS detections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    filename TEXT,
-    label TEXT,
-    confidence REAL,
     timestamp TEXT,
-    gcs_url TEXT
+    hour_of_day TEXT,
+    image_path TEXT,
+    detection_count INTEGER,
+    max_detection_area REAL,
+    detection_data TEXT
 )
 """)
 

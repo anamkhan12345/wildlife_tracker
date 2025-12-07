@@ -1,10 +1,13 @@
+import sqlite3
 import os
+from turtle import pd
 import cv2 as cv
 from ultralytics import YOLO
 import numpy as np
-from datetime import datetime
+from datetime import date, datetime
 import time
 import requests
+import pandas as pd
 
 class BirdModel:
     def __init__(self):
@@ -38,43 +41,53 @@ class BirdModel:
         return rgb_image
 
 
-    def parse_detection(self, detection_result, original_frame):
+    def parse_detection(self, detection_result, original_frame=None):
 
         detection = detection_result[0]
-        boxes = [x.xywh.tolist() for x in detection.boxes]
-        areas = [x[0][2] * x[0][3] for x in boxes]
-        max_area = int(max(areas)) if areas else 0
-
-        conf = detection.boxes.conf
-        aId = detection.boxes.id
         cls = detection.boxes.cls
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S") 
         totalDetections = cls.numel()
-        clsList = cls.tolist()
-        annotated_frame = detection.plot()
         self.detection = False
+
         if totalDetections > 0:
-            print("detection")
+            print(f"Detections: {totalDetections}")
+            # Areas
+            boxes = [x.xywh.tolist() for x in detection.boxes]
+            areas = [x[0][2] * x[0][3] for x in boxes]
+            max_area = int(max(areas)) if areas else 0
+            # Confidence Score 
+            conf = detection.boxes.conf
+            conf_metadata = conf.tolist()
+            # Timestamp and img array
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            hour_only = time.strftime("%H", time.localtime())
+            # Annotated Frame
+            annotated_frame = detection.plot()
+
+            # Set up dictionary to return
+            detection_info = {'timestamp': timestamp,
+                        'hour_of_day': hour_only,
+                        'total_detections': totalDetections,
+                        'max_area': max_area,
+                        'detection_json': [],
+                        'annotated_frame': annotated_frame,
+                        }
             self.detection = True
             self.downloads += 1
             labels = [detection.names[x] for x in cls.tolist()]
-            label = ", ".join(labels) 
-            # TODO: How to store multiple confidence intervals?
-            metadata = {
-            "label": labels,
-            "confidence": totalDetections,
-                    "timestamp": timestamp
-            }
-            timestamp = int(time.time() * 1000)  # milliseconds for uniqueness
-            img_file = f'detect_{timestamp}_area_{max_area}_{self.downloads}.jpg'
-            raw_file = f'raw_{timestamp}_area_{max_area}_{self.downloads}.jpg'
-            cv.imwrite(img_file, annotated_frame)
-            cv.imwrite(raw_file, original_frame)
-            #import_db(metadata, file_name)
+
+            # Create a JSON array for SQLite to handle
+            for i in range(0, totalDetections):
+                json_metadata = {
+                    "label": labels[i],
+                    "confidence": conf_metadata[i],
+                    "area": areas[i]
+                }
+                detection_info['detection_json'].append(json_metadata)
+
         else:
             pass
 
-        return annotated_frame
+        return detection_info
 
 
     def import_db(self, metadata, filename):
@@ -90,3 +103,38 @@ class BirdModel:
                 )
 
         print(response.json())
+
+    def get_stats(self, database="detections.db"):
+        breakpoint()
+        conn = sqlite3.connect(database)
+        cursor = conn.cursor()
+        
+        # Total all time
+        cursor.execute("SELECT SUM(detection_count) FROM detections")
+        total = cursor.fetchone()[0] or 0
+        
+        # Today
+        cursor.execute("""
+            SELECT SUM(detection_count) 
+            FROM detections 
+            WHERE DATE(timestamp) = DATE('now')
+        """)
+        today = cursor.fetchone()[0] or 0
+        
+        # Get average detections for each hour of the day (0-23)
+        cursor.execute("""
+            SELECT 
+                hour_of_day,
+                AVG(detection_count) as avg_detections
+            FROM detections
+            GROUP BY hour_of_day
+            ORDER BY CAST(hour_of_day AS INTEGER)
+        """)
+
+        data = cursor.fetchall()
+        conn.close()
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(data, columns=['Hour', 'Avg Detections'])
+        print(df.head())
+        return total, today, df
