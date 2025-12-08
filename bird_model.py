@@ -9,6 +9,7 @@ import time
 import requests
 import pandas as pd
 
+
 class BirdModel:
     def __init__(self):
         self.downloads = 0
@@ -30,7 +31,6 @@ class BirdModel:
         ncnn_model = YOLO(expected_file_path)
         self.model = ncnn_model
 
-
     def pre_process(self, img):
         #img = cv.flip(img, 1) # Because we are using a webcam
         #image_resized = cv.resize(img, (640,640))
@@ -39,7 +39,6 @@ class BirdModel:
         rgb_image = cv.cvtColor(img, cv.COLOR_BGR2RGB)
 
         return rgb_image
-
 
     def parse_detection(self, detection_result, original_frame=None):
 
@@ -88,7 +87,6 @@ class BirdModel:
             pass
 
         return detection_info
-
 
     def import_db(self, metadata, filename):
 

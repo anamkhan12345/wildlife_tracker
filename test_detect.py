@@ -9,8 +9,6 @@ import bird_model
 import sqlite3
 import streamlit as st
 
-
-
 # Import the detection module
 model_path = r'C:\Users\anamk\projects\dataSets\models\yolo11_birds_12062025.pt'
 model = YOLO(model_path) # on RPI will have to export as NCNN model !!!

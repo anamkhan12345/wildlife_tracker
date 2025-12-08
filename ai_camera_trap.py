@@ -49,7 +49,7 @@ def run(model='models/best_09082025.pt', camera_id=0, width=1920, height=1080) -
         # Preprocess image
         rgb_image = pre_process(image)
 
-	# Get Detection
+	    # Get Detection
         detection_result = detector(rgb_image)
         
         # Parse detection results
@@ -60,7 +60,7 @@ def run(model='models/best_09082025.pt', camera_id=0, width=1920, height=1080) -
             break
         #cv2.imshow('object_detector', annotated_frame)
 
-    cap.release()
+    cap.release()   
     cv2.destroyAllWindows()
 
 
