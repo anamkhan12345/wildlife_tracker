@@ -32,13 +32,14 @@ def hq_cam_trap():
 
     # Setup ML model
     os_name = platform.system()
-    model_path = r'models\best_yolo11_birds_12062025.pt'
     detection_model = bird_model.BirdModel()
     detection_model.ML = True
 
     if os_name == "Windows":
+        model_path = r'models\best_yolo11_birds_12062025.pt'
         detection_model.model = YOLO(model_path)
     else:
+        model_path = 'models/best_yolo11_birds_12062025.pt'
         detection_model.ncnn_model(model_path) # on RPI will have to export as NCNN model !!!
 
     while True:
