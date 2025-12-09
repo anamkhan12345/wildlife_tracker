@@ -131,8 +131,6 @@ def create_df(dir, delim):
     y_1 = []
     x_2 = []
     y_2 = []
-    edges = []
-    source = []
     ar = []
     data_class = []
 
