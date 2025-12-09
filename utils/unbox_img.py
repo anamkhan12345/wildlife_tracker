@@ -34,7 +34,7 @@ def remove_bounding_boxes(label_path, output_path, box_thickness=2, visualize_ma
     mask = cv2.dilate(mask, kernel, iterations=2)  # Increased iterations
     
     # Try INPAINT_NS instead (often better for lines)
-    result = cv2.inpaint(img, mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
+    result = cv2.inpaint(img, mask, inpaintRadius=5, flags=cv2.INPAINT_NS)
     cv2.imwrite(output_path, result)
     
     return result
