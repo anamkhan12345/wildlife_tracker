@@ -34,6 +34,7 @@ def hq_cam_trap():
     os_name = platform.system()
     detection_model = bird_model.BirdModel()
     detection_model.ML = True
+    counter = 0
 
     if os_name == "Windows":
         model_path = r'models\best_yolo11_birds_12062025.pt'
