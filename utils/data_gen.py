@@ -137,7 +137,7 @@ def create_df(dir, delim):
     for f in files:
         name = os.path.basename(f)
         parts = name.split(delim)
-        if 'motion' in parts:
+        if 'detect' in parts:
             aClass = 'bird'
         elif 'negative' in parts:
             aClass = 'negative'
@@ -208,7 +208,7 @@ def create_df(dir, delim):
     
     df = df.sort_values("times")
     df.to_csv('detection_summary.csv', index=False)
-    breakpoint()
+
     return df
 
 def remove_files(files):
@@ -368,10 +368,8 @@ def copy_files_to_yolo_structure(file_split, output_dir):
 def check():
 
     # Verify that each label file has corresponding .jpg file
-    input_dir = r"C:\Users\anamk\projects\dataSets\birds.v4i.yolov11"
-    img_file = r"C:\Users\anamk\projects\dataSets\birds.v1-v0_bare_bones.yolov11\train\images\annotate_detectRaw_1758540743421_area_8512_motion_404_jpg.rf.7fad090b7777c1057c870bb7a56377e6.jpg"
-    txt_file = r"C:\Users\anamk\projects\dataSets\birds.v1-v0_bare_bones.yolov11\train\labels\annotate_detectRaw_1758540743421_area_8512_motion_404_jpg.rf.7fad090b7777c1057c870bb7a56377e6.txt"
-    check_image_label_matches(input_dir)
+    input_dir = r"C:\Users\anamk\projects\dataSets\sandbox_copy"
+    
 
     #yolo_formatted, missing_labels, missing_images = check_image_label_matches(input_dir)
     # print(f"Yolo formatted: {yolo_formatted}")
@@ -384,7 +382,34 @@ def check():
     # fileName_to_csv(input_dir, output_csv)
 
     # Create dataframe with detection info
-    # df = create_df(input_dir, delim='_')
+    df = create_df(input_dir, delim='_')
+
+    # Filter dataframe where detections > 1
+    filtered_df = df[df['detections'] > 1]
+    breakpoint()
+
+    # Display each image
+    for idx, row in filtered_df.iterrows():
+        img_path = row['jpg_files']  # Adjust column name to match your df
+        
+        img = cv.imread(img_path)
+        
+        if img is not None:
+            cv.imshow(f'Image {idx} - Detections: {row["detections"]}', img)
+            
+            # Wait for key press before showing next image
+            key = cv.waitKey(0)
+            
+            # Press 'q' to quit early
+            if key == ord('q'):
+                break
+            
+            cv.destroyAllWindows()
+        else:
+            print(f"Could not load image: {img_path}")
+
+    # Clean up
+    cv.destroyAllWindows()
 
     # # # Test train val split for detections and negative detectoins
     # file_split_1 = train_val_test_split(df)
