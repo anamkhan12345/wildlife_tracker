@@ -10,8 +10,9 @@ import sqlite3
 import streamlit as st
 
 # Import the detection module
-model_path = r'C:\Users\anamk\projects\dataSets\models\yolo11_birds_12062025.pt'
+model_path = r'/home/anamk/projects/wildlife_tracker/models/best_yolo11_birds_12062025.pt'
 model = YOLO(model_path) # on RPI will have to export as NCNN model !!!
+conf_limit = 0.6
 
 # Set file path for folder with 5 images
 test_dir = r'C:\Users\anamk\projects\dataSets\birds.v4i.yolov11'
@@ -26,7 +27,7 @@ for file in test_files:
     # get detection
     result = model(file)
     # Parse detection
-    sql_data = model_utils.parse_detection(result)
+    sql_data = model_utils.parse_detection(conf_limit, result)
     if sql_data:
         # Save annotated frame image
         timestamp = int(time.time() * 1000)  # milliseconds for uniqueness

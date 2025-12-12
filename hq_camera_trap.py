@@ -35,6 +35,7 @@ def hq_cam_trap():
     detection_model = bird_model.BirdModel()
     detection_model.ML = True
     counter = 0
+    conf_limit = 0.6
 
     if os_name == "Windows":
         model_path = r'models\best_yolo11_birds_12062025.pt'
@@ -58,16 +59,19 @@ def hq_cam_trap():
                 # get detection
                 result = detection_model.model(orig_frame)
                 # Parse detection
-                sql_data = detection_model.parse_detection(result)
+                sql_data = detection_model.parse_detection(conf_limit, result)
                 if sql_data:
-                    # Save annotated frame image
+                    # Save annotated frame image and original frame
                     timestamp = int(datetime.datetime.now().timestamp() * 1000)  # milliseconds for uniqueness
                     img_file = f'detect_{timestamp}_{detection_model.downloads}.jpg'
+                    orig_img_file = f'origDetect_{timestamp}_{detection_model.downloads}.jpg'
                     detection_dir = r'C:\Users\anamk\projects\wildlife_tracker\detection_images'
                     if not os.path.exists(detection_dir):
                         os.mkdir(detection_dir)
                     img_file = f'{detection_dir}\{img_file}'
+                    orig_img_file = f'{detection_dir}\{orig_img_file}'
                     cv.imwrite(img_file, sql_data['annotated_frame'])
+                    cv.imwrite(orig_img_file, orig_frame)
                     # Send info to SQLite DB
                     conn = sqlite3.connect("detections.db")
                     cursor = conn.cursor()

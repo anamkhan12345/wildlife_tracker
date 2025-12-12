@@ -40,51 +40,53 @@ class BirdModel:
 
         return rgb_image
 
-    def parse_detection(self, detection_result, original_frame=None):
+    def parse_detection(self, conf_limit, detection_result, original_frame=None):
 
         detection = detection_result[0]
         cls = detection.boxes.cls
         totalDetections = cls.numel()
         self.detection = False
         detection_info = {}
-        if totalDetections > 0:
-            print(f"Detections: {totalDetections}")
-            # Areas
-            boxes = [x.xywh.tolist() for x in detection.boxes]
-            areas = [x[0][2] * x[0][3] for x in boxes]
-            max_area = int(max(areas)) if areas else 0
-            # Confidence Score 
-            conf = detection.boxes.conf
-            conf_metadata = conf.tolist()
-            # Timestamp and img array
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            hour_only = time.strftime("%H", time.localtime())
-            # Annotated Frame
-            annotated_frame = detection.plot()
+        if totalDetections ==  0:
+            return detection_info
+        
+        breakpoint()
+        # Confidence Score 
+        conf = detection.boxes.conf
+        conf_metadata = conf.tolist()
+        if max(conf_metadata) < conf_limit:
+            return detection_info
 
-            # Set up dictionary to return
-            detection_info = {'timestamp': timestamp,
-                        'hour_of_day': hour_only,
-                        'total_detections': totalDetections,
-                        'max_area': max_area,
-                        'detection_json': [],
-                        'annotated_frame': annotated_frame,
-                        }
-            self.detection = True
-            self.downloads += 1
-            labels = [detection.names[x] for x in cls.tolist()]
+        # Areas
+        boxes = [x.xywh.tolist() for x in detection.boxes]
+        areas = [x[0][2] * x[0][3] for x in boxes]
+        max_area = int(max(areas)) if areas else 0
+        # Timestamp and img array
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        hour_only = time.strftime("%H", time.localtime())
+        # Annotated Frame
+        annotated_frame = detection.plot()
 
-            # Create a JSON array for SQLite to handle
-            for i in range(0, totalDetections):
-                json_metadata = {
-                    "label": labels[i],
-                    "confidence": conf_metadata[i],
-                    "area": areas[i]
-                }
-                detection_info['detection_json'].append(json_metadata)
+        # Set up dictionary to return
+        detection_info = {'timestamp': timestamp,
+                    'hour_of_day': hour_only,
+                    'total_detections': totalDetections,
+                    'max_area': max_area,
+                    'detection_json': [],
+                    'annotated_frame': annotated_frame,
+                    }
+        self.detection = True
+        self.downloads += 1
+        labels = [detection.names[x] for x in cls.tolist()]
 
-        else:
-            pass
+        # Create a JSON array for SQLite to handle
+        for i in range(0, totalDetections):
+            json_metadata = {
+                "label": labels[i],
+                "confidence": conf_metadata[i],
+                "area": areas[i]
+            }
+            detection_info['detection_json'].append(json_metadata)
 
         return detection_info
 
