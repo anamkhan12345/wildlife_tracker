@@ -31,19 +31,20 @@ def remove_bounding_boxes(label_path, output_path, box_thickness=2, visualize_ma
     
     # Dilate mask to capture more box pixels
     kernel = np.ones((3, 3), np.uint8)
-    mask = cv2.dilate(mask, kernel, iterations=2)  # Increased iterations
+    mask = cv2.dilate(mask, kernel, iterations=0)  # Increased iterations
     
     # Try INPAINT_NS instead (often better for lines)
-    result = cv2.inpaint(img, mask, inpaintRadius=5, flags=cv2.INPAINT_NS)
+    result = cv2.inpaint(img, mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
     cv2.imwrite(output_path, result)
     
     return result
 
 # Usage for single image
-source_dir = r'C:\Users\anamk\projects\dataSets\sandbox_copy'
+source_dir = r'C:\Users\anamk\projects\dataSets\sandbox_copy\to_move\remove_box_copy'
 all_files = glob.glob(f"{source_dir}/**/*", recursive=True) # Search Dir
 label_files = [Path(f) for f in all_files if f.endswith('.txt')] # Search list - to delete
 
 for aLabel in label_files:
-
-    remove_bounding_boxes(aLabel, 'bird_001_clean.jpg', box_thickness=2, visualize_mask=False)
+    renamed = aLabel.stem + '_no_box.jpg'
+    output_path = str(aLabel.parent / renamed)
+    remove_bounding_boxes(aLabel, output_path, box_thickness=2, visualize_mask=False)

@@ -40,7 +40,7 @@ class BirdModel:
 
         return rgb_image
 
-    def parse_detection(self, conf_limit, detection_result, original_frame=None):
+    def parse_detection(self, conf_limit, detection_result):
 
         detection = detection_result[0]
         cls = detection.boxes.cls
@@ -50,7 +50,6 @@ class BirdModel:
         if totalDetections ==  0:
             return detection_info
         
-        breakpoint()
         # Confidence Score 
         conf = detection.boxes.conf
         conf_metadata = conf.tolist()

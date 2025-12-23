@@ -7,14 +7,11 @@ import shutil
 from pathlib import Path
 import cv2 as cv
 from pathlib import Path
-from PIL import Image
-from PIL.ExifTags import TAGS
-
+import rename_data
 
 def files_to_annotate(source_dir):
 
     all_files = glob.glob(f"{source_dir}/**/*", recursive=True) # Search Dir
-    breakpoint()
     re_annotate_files = [f for f in all_files if ( "-x" in f)] # Key 
     raw_img_files = [f for f in all_files if "detectRaw" in f] # Search list - to rename 
     label_files = [Path(f) for f in all_files if f.endswith('.txt')] # Search list - to delete
@@ -54,18 +51,18 @@ def files_to_annotate(source_dir):
 def check_image_label_matches(source_dir):
 
     all_files = glob.glob(f"{source_dir}/**/*", recursive=True)
-    no_raw_image_files = [f for f in all_files if ( "motion" in f or "negative" in f )]
-    raw_img_files = [f for f in all_files if "detectRaw" in f]
+    no_raw_image_files = [f for f in all_files if ( "detect" in f or "negative" in f )]
+    #raw_img_files = [f for f in all_files if "detectRaw" in f]
 
     image_files = [Path(f) for f in no_raw_image_files if f.endswith('.jpg')]
     label_files = [Path(f) for f in all_files if f.endswith('.txt')]
-    raw_files = [Path(f) for f in raw_img_files]
+    #raw_files = [Path(f) for f in raw_img_files]
 
     label_stems = {f.stem for f in label_files}
     image_stems = {f.stem for f in image_files}
     missing_labels = []
     missing_image = []
-    breakpoint()
+
     for img_file in image_files:
         if img_file.stem not in label_stems:
             missing_labels.append(img_file)
@@ -87,32 +84,11 @@ def check_image_label_matches(source_dir):
         print(f"✓ Perfect! All {len(image_files)} images have matching labels")
         img_file = image_files[0]
         txt_file = next(img_file.parent.parent.rglob(f"{img_file.stem}.txt"), None)
-        yolo_format_verif(txt_file, img_file)
+        #yolo_format_verif(txt_file, img_file)
     else:
         print(f"✗ Found {len(missing_labels)} images without matching labels")
 
     return (len(missing_labels) + len(missing_image) == 0), missing_labels, missing_image
-
-def extract_meta_data(jpg_file):
- with Image.open(jpg_file) as img:
-        # Basic image info
-        info = {
-            'filename': jpg_file,
-            'format': img.format,
-            'mode': img.mode,
-            'size': img.size,
-            'width': img.width,
-            'height': img.height
-        }
-        
-        # EXIF data if available
-        exifdata = img.getexif()
-        if exifdata:
-            for tag_id, value in exifdata.items():
-                tag = TAGS.get(tag_id, tag_id)
-                info[tag] = value
-                
-        return info
 
 def create_df(dir, delim):
     dir_ext = dir + "\**\*.txt"
@@ -137,7 +113,7 @@ def create_df(dir, delim):
     for f in files:
         name = os.path.basename(f)
         parts = name.split(delim)
-        if 'detect' in parts:
+        if 'detect' in parts or 'motion' in parts:
             aClass = 'bird'
         elif 'negative' in parts:
             aClass = 'negative'
@@ -368,12 +344,13 @@ def copy_files_to_yolo_structure(file_split, output_dir):
 def check():
 
     # Verify that each label file has corresponding .jpg file
-    input_dir = r"C:\Users\anamk\projects\dataSets\sandbox_copy"
+    input_dir = r"C:\Users\anamk\projects\dataSets\sandbox_copy\og_sandbox\yolo_bird_data"
     
+    yolo_formatted, missing_labels, missing_images = check_image_label_matches(input_dir)
+    print(f"Yolo formatted: {yolo_formatted}")
+    breakpoint()
+    rename_data.remove_prefix_from_filenames(input_dir, recursive=True)
 
-    #yolo_formatted, missing_labels, missing_images = check_image_label_matches(input_dir)
-    # print(f"Yolo formatted: {yolo_formatted}")
-    # breakpoint()
     # if not yolo_formatted:
     #     exit()
 
@@ -382,34 +359,34 @@ def check():
     # fileName_to_csv(input_dir, output_csv)
 
     # Create dataframe with detection info
-    df = create_df(input_dir, delim='_')
+    # df = create_df(input_dir, delim='_')
 
     # Filter dataframe where detections > 1
-    filtered_df = df[df['detections'] > 1]
-    breakpoint()
+    # filtered_df = df[df['detections'] > 1]
+    # breakpoint()
 
-    # Display each image
-    for idx, row in filtered_df.iterrows():
-        img_path = row['jpg_files']  # Adjust column name to match your df
+    # # Display each image
+    # for idx, row in filtered_df.iterrows():
+    #     img_path = row['jpg_files']  # Adjust column name to match your df
         
-        img = cv.imread(img_path)
+    #     img = cv.imread(img_path)
         
-        if img is not None:
-            cv.imshow(f'Image {idx} - Detections: {row["detections"]}', img)
+    #     if img is not None:
+    #         cv.imshow(f'Image {idx} - Detections: {row["detections"]}', img)
             
-            # Wait for key press before showing next image
-            key = cv.waitKey(0)
+    #         # Wait for key press before showing next image
+    #         key = cv.waitKey(0)
             
-            # Press 'q' to quit early
-            if key == ord('q'):
-                break
+    #         # Press 'q' to quit early
+    #         if key == ord('q'):
+    #             break
             
-            cv.destroyAllWindows()
-        else:
-            print(f"Could not load image: {img_path}")
+    #         cv.destroyAllWindows()
+    #     else:
+    #         print(f"Could not load image: {img_path}")
 
-    # Clean up
-    cv.destroyAllWindows()
+    # # Clean up
+    # cv.destroyAllWindows()
 
     # # # Test train val split for detections and negative detectoins
     # file_split_1 = train_val_test_split(df)

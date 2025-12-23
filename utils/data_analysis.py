@@ -392,48 +392,61 @@ def plot_distribution_analysis(df):
     plt.tight_layout()
     plt.show()
 
+def plot_percent_detect_count(df):
+    df['detections'].value_counts().plot(kind='pie', autopct='%1.1f%%')
+    plt.title('Distribution of Detection Amounts')
+    plt.ylabel('')  # Remove the y-label
+    plt.show()
+    print(f'total images: {len(df)}')
+    print(df['detections'].value_counts())
+
 
 def analysis():
-    input_dir = r"C:\Users\anamk\projects\dataSets\birds.v4i.yolov11"
-    # Create dataframe with detection info
-    df = data_gen.create_df(input_dir, delim='_')
+    input_dir = [r"C:\Users\anamk\projects\dataSets\sandbox_copy\og_sandbox\yolo_bird_data"] # Create dataframe with detection info
 
-    # Plot info on detection area, dections, time of day
-    plot_set_1(df)
+    for dir in input_dir:
+        # Create dataframe
+        df = data_gen.create_df(dir, delim='_')
 
-    # Plot info on AR, image size and classes
-    plot_set_2(df)
+        # Plot percentage of detection counts, sizes
+        plot_percent_detect_count(df)
 
-    birds_only = df[df['class'] == 'bird']
-    plot_coords(birds_only)
+        # Plot info on detection area, dections, time of day
+        plot_set_1(df)
 
-    # Brightness and contrast analysis
-    df_lum_set = df_lum(df['jpg_files'])
-    plot_distribution_analysis(df_lum_set)
+        # Plot info on AR, image size and classes
+        plot_set_2(df)
 
-    # Average HSV histogram for all images
-    hsv_data = df['jpg_files'].apply(get_average_hsv)
-    df[['avg_hue', 'avg_saturation', 'avg_value']] = pd.DataFrame(hsv_data.tolist(), index=df.index)
+        birds_only = df[df['class'] == 'bird']
+        plot_coords(birds_only)
 
-    # Calculate dataset-wide averages
-    dataset_avg_h = df['avg_hue'].mean()
-    dataset_avg_s = df['avg_saturation'].mean()
-    dataset_avg_v = df['avg_value'].mean()
+        # Brightness and contrast analysis
+        df_lum_set = df_lum(df['jpg_files'])
+        plot_distribution_analysis(df_lum_set)
 
-    print(f"Dataset Average HSV: H={dataset_avg_h:.1f}, S={dataset_avg_s:.1f}, V={dataset_avg_v:.1f}")
-    # Hue (H) → the "type of color", “Is it red, blue, green, etc.?”
-    # Saturation (S) → the "intensity of color", “Is it a vivid color or more washed out?”
-        # High saturation → pure, vibrant color (like neon green).
-        # Low saturation → washed-out, grayish color.
-    # Value (V) → the "brightness of color", “Is it a dark color or a light color?”
-        # High value → bright (close to white).
-        # Low value → dark (close to black).
+        # Average HSV histogram for all images
+        hsv_data = df['jpg_files'].apply(get_average_hsv)
+        df[['avg_hue', 'avg_saturation', 'avg_value']] = pd.DataFrame(hsv_data.tolist(), index=df.index)
 
-    plot_hsv_analysis(df)
+        # Calculate dataset-wide averages
+        dataset_avg_h = df['avg_hue'].mean()
+        dataset_avg_s = df['avg_saturation'].mean()
+        dataset_avg_v = df['avg_value'].mean()
 
-    # Filter for single detections AND any area < 100
-    filtered_df = df[(df['detections'] == 1) & 
-                    (df['bbox_area'].apply(lambda x: any(area < 300 and area > 250 for area in x)))]
+        # print(f"Dataset Average HSV: H={dataset_avg_h:.1f}, S={dataset_avg_s:.1f}, V={dataset_avg_v:.1f}")
+        # # Hue (H) → the "type of color", “Is it red, blue, green, etc.?”
+        # # Saturation (S) → the "intensity of color", “Is it a vivid color or more washed out?”
+        #     # High saturation → pure, vibrant color (like neon green).
+        #     # Low saturation → washed-out, grayish color.
+        # # Value (V) → the "brightness of color", “Is it a dark color or a light color?”
+        #     # High value → bright (close to white).
+        #     # Low value → dark (close to black).
+
+        # plot_hsv_analysis(df)
+
+        # # Filter for single detections AND any area < 100
+        # filtered_df = df[(df['detections'] == 1) & 
+        #                 (df['bbox_area'].apply(lambda x: any(area < 300 and area > 250 for area in x)))]
 
 
 if __name__ == "__main__":

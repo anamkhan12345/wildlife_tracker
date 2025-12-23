@@ -35,7 +35,9 @@ def hq_cam_trap():
     detection_model = bird_model.BirdModel()
     detection_model.ML = True
     counter = 0
-    conf_limit = 0.6
+    conf_limit = 0.2
+
+    detection_dir = "detection_images"
 
     if os_name == "Windows":
         model_path = r'models\best_yolo11_birds_12062025.pt'
@@ -43,7 +45,6 @@ def hq_cam_trap():
     else:
         model_path = 'models/best_yolo11_birds_12062025.pt'
         detection_model.ncnn_model(model_path) # on RPI will have to export as NCNN model !!!
-
     while True:
         frame = picam.capture_array()
         counter = counter + 1
@@ -65,13 +66,13 @@ def hq_cam_trap():
                     timestamp = int(datetime.datetime.now().timestamp() * 1000)  # milliseconds for uniqueness
                     img_file = f'detect_{timestamp}_{detection_model.downloads}.jpg'
                     orig_img_file = f'origDetect_{timestamp}_{detection_model.downloads}.jpg'
-                    detection_dir = r'C:\Users\anamk\projects\wildlife_tracker\detection_images'
                     if not os.path.exists(detection_dir):
                         os.mkdir(detection_dir)
                     img_file = f'{detection_dir}\{img_file}'
                     orig_img_file = f'{detection_dir}\{orig_img_file}'
                     cv.imwrite(img_file, sql_data['annotated_frame'])
                     cv.imwrite(orig_img_file, orig_frame)
+                    # TODO: Write the label file of bounding boxes 
                     # Send info to SQLite DB
                     conn = sqlite3.connect("detections.db")
                     cursor = conn.cursor()
@@ -98,9 +99,6 @@ def hq_cam_trap():
     cv.destroyAllWindows() # closes all windows
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Arg parse for two vars - camera id and detection area'
-    )
 
     # Run pipeline
     hq_cam_trap()

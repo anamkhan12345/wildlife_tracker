@@ -121,6 +121,59 @@ def batch_rename_files(folder_path, dry_run=True):
             print(f"✗ Error renaming {old_name}: {e}")
     
     print(f"\nTotal files renamed: {renamed_count}")
+import os
+
+
+def remove_prefix_from_filenames(directory, prefix="annotate_", recursive=True):
+    """
+    Remove a prefix from all filenames in a directory.
+    
+    Args:
+        directory: Path to the directory containing files
+        prefix: Prefix to remove (default: "annotate_")
+        recursive: If True, process subdirectories (default: True)
+    
+    Returns:
+        Number of files renamed
+    """
+    renamed_count = 0
+    
+    # Check if directory exists
+    if not os.path.exists(directory):
+        print(f"Directory not found: {directory}")
+        return 0
+    
+    if recursive:
+        # Walk through all subdirectories
+        for root, dirs, files in os.walk(directory):
+            for filename in files:
+                if filename.startswith(prefix):
+                    old_path = os.path.join(root, filename)
+                    new_filename = filename[len(prefix):]
+                    new_path = os.path.join(root, new_filename)
+                    
+                    os.rename(old_path, new_path)
+                    print(f"Renamed: {os.path.relpath(old_path, directory)} → {new_filename}")
+                    renamed_count += 1
+    else:
+        # Only process files in the top-level directory
+        for filename in os.listdir(directory):
+            filepath = os.path.join(directory, filename)
+            if os.path.isfile(filepath) and filename.startswith(prefix):
+                new_filename = filename[len(prefix):]
+                new_path = os.path.join(directory, new_filename)
+                
+                os.rename(filepath, new_path)
+                print(f"Renamed: {filename} → {new_filename}")
+                renamed_count += 1
+    
+    print(f"\nTotal files renamed: {renamed_count}")
+    return renamed_count
+
+# Usage:
+remove_prefix_from_filenames("/path/to/your/directory")  # Processes all subdirectories
+remove_prefix_from_filenames("/path/to/your/directory", recursive=False)  # Only top level
+
 
 # Example usage and testing
 if __name__ == "__main__":
