@@ -4,12 +4,15 @@ Hi! This is my project to detect birds from my apartment window.
 
 ## Problem Overview
 
-I am trying to detect birds both in motion and stationary / perched from my apartment window. These birds could be upto 100 meters away or as close as 1 meter. However, I am trying
+I am trying to detect birds both in motion and stationary / perched from my apartment window. These birds could be upto 70 meters away or as close as 1 meter. However, I am trying
 to detect them from only one angle and one environment. I want to be able to detect multiple birds as well in a frame.
 
 I also want a live web dashboard that will show the most recent detection, largest detection, total detections, and an average detection per hour of the day. 
 
 ## Architecture Overview
+
+![Overall Architecture](./architecture.drawio)
+
 
 ### Datasets
 
