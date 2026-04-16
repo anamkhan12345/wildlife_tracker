@@ -29,7 +29,7 @@ figure out. I was able to find one on Amazon for cheap and the camera worked per
 
 ### Software / Models
 
-All of my code was in python to take advantage of its robust computer vision and ML libraries. I opte to use YOLOv11 for transfer learning. I trained my model in a Kaggle Notebook
+All of my code was in python to take advantage of its robust computer vision and ML libraries. I opted to use YOLOv11 for transfer learning. I trained my model in a Kaggle Notebook
 and then exported it as a YOLO NCNN model, which is better suited to run on smaller devices like my RPI. 
 
 I used a SQLite database that that contained information about the detection. This database was stored locally on my RPI. I initially stored my images on the cloud via Google Cloud Storage, just to learn how to use the API
