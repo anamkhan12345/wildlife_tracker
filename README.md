@@ -11,7 +11,7 @@ I also want a live web dashboard that will show the most recent detection, large
 
 ## Architecture Overview
 
-![Overall Architecture](./architecture.drawio)
+![Overall Architecture](./architecture.drawio.png)
 
 
 ### Datasets
