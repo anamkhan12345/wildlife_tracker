@@ -1,0 +1,98 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Page-1" id="i86wlKtt1QCVFo2B9XNz">
+    <mxGraphModel dx="2108" dy="842" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Raspberry Pi HQ Camera" vertex="1">
+          <mxGeometry height="60" width="120" x="10" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;align=center;" value="" vertex="1">
+          <mxGeometry height="400" width="200" x="220" y="120" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-34" edge="1" parent="1" source="Llwk-Hprl75kP6Dx8jid-16" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Llwk-Hprl75kP6Dx8jid-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-35" connectable="0" parent="Llwk-Hprl75kP6Dx8jid-34" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Detection attributes" vertex="1">
+          <mxGeometry relative="1" x="-0.1314" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="YOLO NCNN Model and scripts" vertex="1">
+          <mxGeometry height="60" width="120" x="260" y="140" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-21" edge="1" parent="1" source="Llwk-Hprl75kP6Dx8jid-17" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="Llwk-Hprl75kP6Dx8jid-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-24" connectable="0" parent="Llwk-Hprl75kP6Dx8jid-21" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Parsed Image Attributes" vertex="1">
+          <mxGeometry relative="1" x="0.05" y="3" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-17" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="SQLite Database" vertex="1">
+          <mxGeometry height="60" width="120" x="260" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-41" edge="1" parent="1" source="Llwk-Hprl75kP6Dx8jid-18" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="Llwk-Hprl75kP6Dx8jid-38">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-42" edge="1" parent="1" source="Llwk-Hprl75kP6Dx8jid-18" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" target="Llwk-Hprl75kP6Dx8jid-39">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-43" edge="1" parent="1" source="Llwk-Hprl75kP6Dx8jid-18" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="Llwk-Hprl75kP6Dx8jid-40">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-18" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Streamlit Web Dashboard" vertex="1">
+          <mxGeometry height="60" width="120" x="260" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-19" edge="1" parent="1" source="Llwk-Hprl75kP6Dx8jid-14" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="Llwk-Hprl75kP6Dx8jid-16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-22" connectable="0" parent="Llwk-Hprl75kP6Dx8jid-19" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Images / Frames" vertex="1">
+          <mxGeometry relative="1" x="-0.1718" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-36" edge="1" parent="1" source="Llwk-Hprl75kP6Dx8jid-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="Llwk-Hprl75kP6Dx8jid-18">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="610" y="440" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-37" connectable="0" parent="Llwk-Hprl75kP6Dx8jid-36" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Parsed Images" vertex="1">
+          <mxGeometry relative="1" x="0.5461" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-25" parent="1" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" value="Google Cloud Storage" vertex="1">
+          <mxGeometry height="80" width="120" x="560" y="126" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-27" edge="1" parent="1" source="Llwk-Hprl75kP6Dx8jid-16" style="edgeStyle=none;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.16;entryY=0.55;entryDx=0;entryDy=0;entryPerimeter=0;" target="Llwk-Hprl75kP6Dx8jid-25">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="495" y="170" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-30" connectable="0" parent="Llwk-Hprl75kP6Dx8jid-27" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Detection Images" vertex="1">
+          <mxGeometry relative="1" x="-0.04" y="-1" as="geometry">
+            <mxPoint x="-26" y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-38" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Any PC on Local Network" vertex="1">
+          <mxGeometry height="60" width="120" x="90" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-39" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Any PC on Local Network" vertex="1">
+          <mxGeometry height="60" width="120" x="260" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-40" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Any PC on Local Network" vertex="1">
+          <mxGeometry height="60" width="120" x="420" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-44" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="Raspberry PI 5" vertex="1">
+          <mxGeometry height="30" width="100" x="270" y="90" as="geometry" />
+        </mxCell>
+        <mxCell id="Llwk-Hprl75kP6Dx8jid-45" parent="1" style="verticalLabelPosition=bottom;verticalAlign=top;html=1;shape=mxgraph.basic.cone;rotation=50;" value="1m - 70m range" vertex="1">
+          <mxGeometry height="230" width="51.97" x="-107" y="140" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
